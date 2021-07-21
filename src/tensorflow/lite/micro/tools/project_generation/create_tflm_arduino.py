@@ -50,6 +50,9 @@ import configparser
 #       list_third_party_headers>
 # patch third_party/flatbuffers/include/flatbuffers/base.h with:
 #   sed -E 's/utility\.h/utility/g'
+# patch third_party/kissfft/kiss_fft.h
+#   sed -E 's@#include <string.h>@//#include <string.h>
+# 	 /* Patched by helper_functions.inc for Arduino compatibility */@g'
 # run fix_arduino_subfolders.py {outdir}/tflm_arduino
 # remove all empty directories in {outdir}/tflm_arduino tree
 # create ZIP file using shutil.make_archive()
@@ -534,8 +537,8 @@ class ArduinoProjectGenerator:
     self._CopyWithTransform(repo_xform_paths, headers_dict=headers_dict)
     self._CopyNoTransform(base_copy_paths, relative_to=self.base_dir)
     self._CopyNoTransform(repo_copy_paths)
-    self._PatchWithSed(self.patch_sed_list)
     self._FixSubDirectories()
+    self._PatchWithSed(self.patch_sed_list)
     self._RemoveEmptyDirectories()
     self._MakeZipFile()
 
