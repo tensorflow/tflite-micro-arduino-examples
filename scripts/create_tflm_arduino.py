@@ -25,43 +25,10 @@ from typing import Dict, Iterable, List, Set, Tuple, Union
 from enum import Enum, unique
 import configparser
 
-# parse args: {outdir}
-# generate list of all source/header files and their src/dst locations
-# create directory tree in {outdir}/tflm_arduino
-# download third-party source
-# copy templates: library.properties to {outdir}/tflm_arduino
-# copy templates: TensorFlowLite.h to {outdir}/tflm_arduino/src
-# copy transforms: examples
-#   --platform=arduino
-#   --third_party_headers=<output from make
-#       list_{example_name}_example_headers
-#       list_third_party_headers>
-#   --is_example_source
-# copy transforms: examples/{example_name}/main_functions.cc to
-#  {example_name}.ino
-#   --platform=arduino
-#   --third_party_headers=<output from make
-#       list_{example_name}_example_headers
-#       list_third_party_headers>
-#   --is_example_ino
-# copy transforms: tensorflow, third_party
-#   --platform=arduino
-#   --third_party_headers=<output from make
-#       list_third_party_headers>
-# patch third_party/flatbuffers/include/flatbuffers/base.h with:
-#   sed -E 's/utility\.h/utility/g'
-# patch third_party/kissfft/kiss_fft.h
-#   sed -E 's@#include <string.h>@//#include <string.h>
-# 	 /* Patched by helper_functions.inc for Arduino compatibility */@g'
-# run fix_arduino_subfolders.py {outdir}/tflm_arduino
-# remove all empty directories in {outdir}/tflm_arduino tree
-# create ZIP file using shutil.make_archive()
 
-
-def RunSedScripts(file_path: Path,
-                  scripts: List[str],
-                  args: Union[str, None] = None,
-                  is_dry_run: bool = True) -> None:
+def _run_sed_scripts(file_path: Path,
+                     scripts: List[str],
+                     is_dry_run: bool = True) -> None:
   """
   Run SED scripts with specified arguments against the given file.
   The file is updated in place.
@@ -69,15 +36,11 @@ def RunSedScripts(file_path: Path,
   Args:
     file_path: The full path to the input file
     scripts: A list of strings, each containing a single SED script
-    args: a string containing all the SED arguments | None
     is_dry_run: if True, do not execute any commands
   """
-  cmd = "sed"
-  if args is not None and args != "":
-    cmd += f" {args}"
-  for scr in scripts:
-    cmd += f" -E {scr}"
-  cmd += f" < {file_path!s}"
+  if scripts == []:
+    raise RuntimeError(f"No scripts specified for file {str(file_path)}")
+  cmd = f"sed -E {' -E '.join(scripts)} {str(file_path)}"
   print(f"Running command: {cmd}")
   if not is_dry_run:
     result = subprocess.run(cmd,
@@ -85,11 +48,11 @@ def RunSedScripts(file_path: Path,
                             check=True,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.PIPE)
-    print(f"Saving output to: {file_path!s}")
+    print(f"Saving output to: {str(file_path)}")
     file_path.write_bytes(result.stdout)
 
 
-def RemoveDirectories(paths: List[Path], is_dry_run: bool = True) -> None:
+def _remove_directories(paths: List[Path], is_dry_run: bool = True) -> None:
   """
   Remove directory tree(s) given list of pathnames
 
@@ -98,14 +61,14 @@ def RemoveDirectories(paths: List[Path], is_dry_run: bool = True) -> None:
     is_dry_run: if True, do not execute any commands
   """
   for dir_path in paths:
-    print(f"Removing directory tree {dir_path!s}")
+    print(f"Removing directory tree {str(dir_path)}")
     if dir_path.exists() and not is_dry_run:
       shutil.rmtree(dir_path)
 
 
-def RemoveEmptyDirectories(paths: Iterable[Path],
-                           root: Path,
-                           is_dry_run: bool = True) -> None:
+def _remove_empty_directories(paths: Iterable[Path],
+                              root: Path,
+                              is_dry_run: bool = True) -> None:
   """
   Remove empty directories given list of pathnames, searching parent
   directories until reaching the root directory
@@ -121,16 +84,16 @@ def RemoveEmptyDirectories(paths: Iterable[Path],
     if dir_path == root:
       continue
     parent_paths.add(dir_path.parent)
-    print(f"Removing empty directory {dir_path!s}")
+    print(f"Removing empty directory {str(dir_path)}")
     if not is_dry_run:
       dir_path.rmdir()
   if len(parent_paths) > 0:
-    RemoveEmptyDirectories(parent_paths, root=root, is_dry_run=is_dry_run)
+    _remove_empty_directories(parent_paths, root=root, is_dry_run=is_dry_run)
 
 
-def RunPythonScript(path_to_script: Path,
-                    args: str,
-                    is_dry_run: bool = True) -> None:
+def _run_python_script(path_to_script: str,
+                       args: str,
+                       is_dry_run: bool = True) -> None:
   """
   Run a python script with specified arguments
 
@@ -139,8 +102,7 @@ def RunPythonScript(path_to_script: Path,
     args: a string containing all the script arguments
     is_dry_run: if True, do not execute any commands
   """
-  cmd = f"python3 {path_to_script!s}"
-  cmd += f" {args}"
+  cmd = f"python3 {str(path_to_script)} {args}"
   print(f"Running command: {cmd}")
   if not is_dry_run:
     _ = subprocess.run(cmd,
@@ -150,7 +112,7 @@ def RunPythonScript(path_to_script: Path,
                        stderr=subprocess.PIPE)
 
 
-def CreateDirectories(paths: List[Path], is_dry_run: bool = True) -> None:
+def _create_directories(paths: List[Path], is_dry_run: bool = True) -> None:
   """
   Create directory tree(s) given list of pathnames
 
@@ -158,15 +120,14 @@ def CreateDirectories(paths: List[Path], is_dry_run: bool = True) -> None:
     paths: A list of Path objects
     is_dry_run: if True, do not execute any commands
   """
-  dir_path: Path
   for dir_path in paths:
-    print(f"Creating directory tree {dir_path!s}")
+    print(f"Creating directory tree {str(dir_path)}")
     if not dir_path.is_dir() and not is_dry_run:
       dir_path.mkdir(mode=0o755, parents=True, exist_ok=True)
 
 
-def CopyFiles(paths: Iterable[Tuple[Path, Path]],
-              is_dry_run: bool = True) -> None:
+def _copy_files(paths: Iterable[Tuple[Path, Path]],
+                is_dry_run: bool = True) -> None:
   """
   Copy files given list of source and destination Path tuples
 
@@ -175,11 +136,11 @@ def CopyFiles(paths: Iterable[Tuple[Path, Path]],
     Each tuple is of the form (source, destination)
     is_dry_run: if True, do not execute any commands
   """
-  dir_path: Tuple[Path, Path]
-  for dir_path in paths:
-    print(f"Copying {dir_path[0]!s} to {dir_path[1]!s}")
+  #dir_path: Tuple[Path, Path]
+  for from_path, to_path in paths:
+    print(f"Copying {str(from_path)} to {str(to_path)}")
     if not is_dry_run:
-      shutil.copy2(dir_path[0], dir_path[1])
+      shutil.copy2(from_path, to_path)
 
 
 class ArduinoProjectGenerator:
@@ -212,8 +173,7 @@ class ArduinoProjectGenerator:
       self.output_dir = Path(args.output_dir)
     self.is_dry_run: bool = args.is_dry_run
     if args.manifest_file is None:
-      self.manifest_path = Path(
-          "src/tensorflow/lite/micro/tools/project_generation/MANIFEST.ini")
+      self.manifest_path = Path("scripts/MANIFEST.ini")
     else:
       self.manifest_path = Path(args.manifest_file)
 
@@ -233,8 +193,6 @@ class ArduinoProjectGenerator:
         self.Manifest.SPECIAL_BASE]
     self.patch_sed_list: List[Tuple[List[Path], List[str]]] = manifest[
         self.Manifest.PATCH_SED]
-
-    #self.downloads_path = Path("tensorflow/lite/micro/tools/make/downloads")
 
   def _ParseManifest(self) -> Dict[Manifest, List]:
     manifest: Dict[self.Manifest, List] = dict()
@@ -295,9 +253,9 @@ class ArduinoProjectGenerator:
 
   def _CleanOutputDirectory(self) -> None:
     dirs_to_remove = [self.output_dir]
-    RemoveDirectories(dirs_to_remove, is_dry_run=self.is_dry_run)
+    _remove_directories(dirs_to_remove, is_dry_run=self.is_dry_run)
     zip_path = self.output_dir.with_suffix(".zip")
-    print(f"Removing ZIP file: {zip_path!s}")
+    print(f"Removing ZIP file: {str(zip_path)}")
     if zip_path.exists() and not self.is_dry_run:
       zip_path.unlink()
 
@@ -312,7 +270,7 @@ class ArduinoProjectGenerator:
     relative_subdirs.sort()
 
     # filter out common parents
-    def _FilterFunc(pair: Tuple[int, Path]):
+    def _filter_func(pair: Tuple[int, Path]):
       index = pair[0]
       if index == len(relative_subdirs) - 1:
         return True
@@ -322,7 +280,7 @@ class ArduinoProjectGenerator:
         return False
 
     filtered_subdirs: List[Tuple[int, Path]] = list(
-        filter(_FilterFunc, enumerate(relative_subdirs)))
+        filter(_filter_func, enumerate(relative_subdirs)))
     # convert from enumerated tuples back into list of Path objects
     if filtered_subdirs != []:
       relative_subdirs = list(list(zip(*filtered_subdirs))[1])
@@ -331,7 +289,7 @@ class ArduinoProjectGenerator:
 
     # convert relative paths to full destination paths
     dst_subdirs = [self.output_dir / path for path in relative_subdirs]
-    CreateDirectories(dst_subdirs, is_dry_run=self.is_dry_run)
+    _create_directories(dst_subdirs, is_dry_run=self.is_dry_run)
 
   def _CopyNoTransform(
       self,
@@ -341,7 +299,7 @@ class ArduinoProjectGenerator:
 
     full_paths = [(relative_to / item[0], self.output_dir / item[1])
                   for item in relative_paths]
-    CopyFiles(full_paths, is_dry_run=self.is_dry_run)
+    _copy_files(full_paths, is_dry_run=self.is_dry_run)
 
   def _CopyWithTransform(
       self,
@@ -350,8 +308,7 @@ class ArduinoProjectGenerator:
       relative_to: Path = Path(".")
   ) -> None:
 
-    script_path = Path(
-        "src/tensorflow/lite/micro/tools/make/transform_source.py")
+    script_path = "scripts/transform_source.py"
 
     # transform all source and header files
     for relative_paths in path_pairs:
@@ -376,24 +333,23 @@ class ArduinoProjectGenerator:
       elif is_example_source:
         args += " --is_example_source"
       args += f' --third_party_headers="{third_party_headers}"'
-      args += f" < {src_path!s} > {dst_path!s}"
-      RunPythonScript(script_path, args=args, is_dry_run=self.is_dry_run)
+      args += f" < {str(src_path)} > {str(dst_path)}"
+      _run_python_script(script_path, args=args, is_dry_run=self.is_dry_run)
 
   def _PatchWithSed(self, patches: List[Tuple[List[Path], List[str]]]) -> None:
     for files, scripts in patches:
       for file in files:
-        RunSedScripts(self.output_dir / file,
-                      scripts=scripts,
-                      is_dry_run=self.is_dry_run)
+        _run_sed_scripts(self.output_dir / file,
+                         scripts=scripts,
+                         is_dry_run=self.is_dry_run)
 
   def _FixSubDirectories(self) -> None:
-    script_path = Path(
-        "src/tensorflow/lite/micro/tools/make/fix_arduino_subfolders.py")
+    script_path = "scripts/fix_arduino_subfolders.py"
     args = str(self.output_dir)
-    RunPythonScript(script_path, args, is_dry_run=self.is_dry_run)
+    _run_python_script(script_path, args, is_dry_run=self.is_dry_run)
 
   def _MakeZipFile(self) -> None:
-    print(f"Creating ZIP file: {self.output_dir!s}.zip")
+    print(f"Creating ZIP file: {str(self.output_dir)}.zip")
     shutil.make_archive(base_name=str(self.output_dir),
                         format="zip",
                         root_dir=self.output_dir.parent,
@@ -506,9 +462,9 @@ class ArduinoProjectGenerator:
 
   def _RemoveEmptyDirectories(self) -> None:
     paths = self.output_dir.glob("**")
-    RemoveEmptyDirectories(paths,
-                           root=self.output_dir,
-                           is_dry_run=self.is_dry_run)
+    _remove_empty_directories(paths,
+                              root=self.output_dir,
+                              is_dry_run=self.is_dry_run)
 
   #
   # public methods
