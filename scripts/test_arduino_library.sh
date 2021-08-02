@@ -26,8 +26,8 @@ ARDUINO_CLI_TOOL=/tmp/arduino-cli
 # Necessary due to bug in arduino-cli that allows it to build files in pwd
 TEMP_BUILD_DIR=/tmp/tflite-arduino-build
 
-LIBRARY_ZIP=${1}
-LIBRARY_NAME=$(basename ${1} .zip)
+LIBRARY_DIR=${1}
+LIBRARY_NAME=$(basename ${1})
 
 rm -rf ${TEMP_BUILD_DIR}
 rm -rf ${ARDUINO_LIBRARIES_DIR}
@@ -35,7 +35,7 @@ rm -rf ${ARDUINO_LIBRARIES_DIR}
 mkdir -p ${ARDUINO_LIBRARIES_DIR}
 mkdir -p ${TEMP_BUILD_DIR}
 
-unzip -q ${LIBRARY_ZIP} -d "${ARDUINO_LIBRARIES_DIR}"
+cp -a ${LIBRARY_DIR} "${ARDUINO_LIBRARIES_DIR}"
 
 # Installs all dependencies for Arduino
 InstallLibraryDependencies () {
@@ -54,7 +54,7 @@ InstallLibraryDependencies () {
   # the defines in ArduCAM/memorysaver.h are correct.
   wget -O /tmp/arducam-master.zip https://github.com/ArduCAM/Arduino/archive/e216049ba304048ec9bb29adfc2cc24c16f589b1/master.zip
   unzip -o /tmp/arducam-master.zip -d /tmp
-  cp -r /tmp/Arduino-e216049ba304048ec9bb29adfc2cc24c16f589b1/ArduCAM "${ARDUINO_LIBRARIES_DIR}"
+  cp -a /tmp/Arduino-e216049ba304048ec9bb29adfc2cc24c16f589b1/ArduCAM "${ARDUINO_LIBRARIES_DIR}"
 }
 
 InstallLibraryDependencies

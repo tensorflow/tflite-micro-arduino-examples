@@ -81,13 +81,9 @@ def replace_arduino_example_includes(line, _):
   # Because the export process moves the example source and header files out of
   # their default locations into the top-level 'examples' folder in the Arduino
   # library, we have to update any include references to match.
-  dir_path = 'tensorflow/lite/micro/examples/'
+  dir_path = 'examples/'
   include_match = re.match(
       r'(.*#include.*")' + six.ensure_str(dir_path) + r'([^/]+)/(.*")', line)
-  if not include_match:
-    dir_path = 'examples/'
-    include_match = re.match(
-        r'(.*#include.*")' + six.ensure_str(dir_path) + r'([^/]+)/(.*")', line)
   if include_match:
     flattened_name = re.sub(r'/', '_', include_match.group(3))
     line = include_match.group(1) + flattened_name
