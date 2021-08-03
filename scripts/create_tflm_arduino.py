@@ -178,9 +178,9 @@ class ArduinoProjectGenerator:
     else:
       self._manifest_path = Path(args.manifest_file)
 
-    # generate list of examples by inspecting base_dir/examples
+    # generate list of examples by inspecting repo examples directory
     self._examples: List[str] = []
-    for path in self._base_dir.glob("examples/*"):
+    for path in Path("examples").glob("*"):
       if path.is_dir:
         self._examples.append(path.name)
 
