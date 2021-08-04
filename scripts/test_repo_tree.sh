@@ -29,4 +29,4 @@ source "${SCRIPT_DIR}"/helper_functions.sh
 readable_run "${SCRIPT_DIR}"/install_arduino_cli.sh
 
 readable_run "${SCRIPT_DIR}"/test_arduino_library.sh \
-  "${ROOT_DIR}"
+  "${PWD}"
