@@ -14,19 +14,20 @@
 # limitations under the License.
 # ==============================================================================
 #
-# Creates the project file distributions for the TensorFlow Lite Micro test and
-# example targets aimed at embedded platforms.
+# Tests the local git repo to make sure the Arduino examples can successfully
+# be built using the Arduino CLI.
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="${SCRIPT_DIR}/.."
 cd "${ROOT_DIR}"
-echo BASH_SOURCE=${BASH_SOURCE[0]} SCRIPT_DIR=${SCRIPT_DIR} ROOT_DIR=${ROOT_DIR}
 
 source "${SCRIPT_DIR}"/helper_functions.sh
 
 readable_run "${SCRIPT_DIR}"/install_arduino_cli.sh
 
+# test_arduino_libarary.sh must be passed a normalized path,
+# thus the cd ${ROOT_DIR} above is required for ${PWD} here.
 readable_run "${SCRIPT_DIR}"/test_arduino_library.sh \
   "${PWD}"
