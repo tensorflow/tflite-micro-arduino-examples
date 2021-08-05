@@ -31,6 +31,7 @@ jobs:
 
       - name: Sync the code
         run: |
+          pip3 install six
           ./scripts/sync_from_tflite_micro.sh
           git config --local user.name "TFLM-bot"
           git config --local user.email "tflm-github-bot@google.com"
