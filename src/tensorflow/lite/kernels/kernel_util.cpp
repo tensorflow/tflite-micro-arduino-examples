@@ -21,9 +21,9 @@ limitations under the License.
 #include <complex>
 #include <limits>
 #include <memory>
-#ifndef TF_LITE_STATIC_MEMORY
+#ifndef ARDUINO
 #include <string>
-#endif  // TF_LITE_STATIC_MEMORY
+#endif  // ARDUINO
 
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
@@ -148,7 +148,7 @@ const TfLiteTensor* GetOptionalInputTensor(const TfLiteContext* context,
   return GetInput(context, node, index);
 }
 
-#ifndef TF_LITE_STATIC_MEMORY
+#ifndef ARDUINO
 TfLiteTensor* GetTemporary(TfLiteContext* context, const TfLiteNode* node,
                            int index) {
   const int tensor_index = ValidateTensorIndexing(
@@ -190,7 +190,7 @@ TfLiteStatus GetIntermediatesSafe(const TfLiteContext* context,
   *tensor = GetTensorAtIndex(context, tensor_index);
   return kTfLiteOk;
 }
-#endif  // TF_LITE_STATIC_MEMORY
+#endif  // ARDUINO
 
 // Per-axis
 TfLiteStatus PopulateConvolutionQuantizationParams(
@@ -409,7 +409,7 @@ bool HaveSameShapes(const TfLiteTensor* input1, const TfLiteTensor* input2) {
   return TfLiteIntArrayEqual(input1->dims, input2->dims);
 }
 
-#ifndef TF_LITE_STATIC_MEMORY
+#ifndef ARDUINO
 
 // TODO(b/172067338): Having this function be part of TF_LITE_STATIC_MEMORY
 // build results in a 6KB size increase, even though the function is unsused for
@@ -492,7 +492,7 @@ TfLiteStatus CalculateShapeForBroadcast(TfLiteContext* context,
   *output_shape = shape.release();
   return kTfLiteOk;
 }
-#endif  // TF_LITE_STATIC_MEMORY
+#endif  // ARDUINO
 
 // Size of string is not constant, return 0 in such case.
 int TfLiteTypeGetSize(TfLiteType type) {
