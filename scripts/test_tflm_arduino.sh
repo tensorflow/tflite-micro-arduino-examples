@@ -36,9 +36,9 @@ readable_run make -f tensorflow/lite/micro/tools/make/Makefile clean_downloads
 
 BASE_DIR=/tmp/tflm_tree
 OUTPUT_DIR=/tmp/tflm_arduino
-TARGET=arduino
+TARGET=cortex_m_generic
 OPTIMIZED_KERNEL_DIR=cmsis_nn
-TARGET_ARCH=
+TARGET_ARCH=cortex-m4
 
 readable_run python3 tensorflow/lite/micro/tools/project_generation/create_tflm_tree.py \
   -e hello_world -e magic_wand -e micro_speech -e person_detection \

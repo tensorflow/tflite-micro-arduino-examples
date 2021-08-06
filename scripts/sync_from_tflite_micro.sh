@@ -34,9 +34,9 @@ make -f tensorflow/lite/micro/tools/make/Makefile clean_downloads
 
 BASE_DIR="${TEMP_DIR}/tflm_tree"
 OUTPUT_DIR="${TEMP_DIR}/tflm_arduino"
-TARGET=arduino
+TARGET=cortex_m_generic
 OPTIMIZED_KERNEL_DIR=cmsis_nn
-TARGET_ARCH=
+TARGET_ARCH=cortex-m4
 
 # Create the TFLM base tree
 python3 tensorflow/lite/micro/tools/project_generation/create_tflm_tree.py \
