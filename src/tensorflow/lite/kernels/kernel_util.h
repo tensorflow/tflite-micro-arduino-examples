@@ -94,7 +94,7 @@ TfLiteStatus GetOutputSafe(const TfLiteContext* context, const TfLiteNode* node,
 const TfLiteTensor* GetOptionalInputTensor(const TfLiteContext* context,
                                            const TfLiteNode* node, int index);
 
-#ifndef TF_LITE_STATIC_MEMORY
+#ifndef ARDUINO
 // Note: You must check if result is not null:
 //
 //   TfLiteTensor* my_tensor = GetTemporary(context, node, kMyTensorIdx);
@@ -142,7 +142,7 @@ const TfLiteTensor* GetIntermediates(TfLiteContext* context,
 TfLiteStatus GetIntermediatesSafe(const TfLiteContext* context,
                                   const TfLiteNode* node, int index,
                                   TfLiteTensor** tensor);
-#endif  // TF_LITE_STATIC_MEMORY
+#endif  // ARDUINO
 
 inline int NumDimensions(const TfLiteTensor* t) { return t->dims->size; }
 inline int SizeOfDimension(const TfLiteTensor* t, int dim) {
@@ -152,11 +152,11 @@ inline int SizeOfDimension(const TfLiteTensor* t, int dim) {
 inline int NumInputs(const TfLiteNode* node) { return node->inputs->size; }
 inline int NumOutputs(const TfLiteNode* node) { return node->outputs->size; }
 
-#ifndef TF_LITE_STATIC_MEMORY
+#ifndef ARDUINO
 inline int NumIntermediates(const TfLiteNode* node) {
   return node->intermediates->size;
 }
-#endif  // TF_LITE_STATIC_MEMORY
+#endif  // ARDUINO
 
 inline int64_t NumElements(const TfLiteIntArray* dims) {
   int64_t count = 1;
