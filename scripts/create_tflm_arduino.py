@@ -42,7 +42,7 @@ def _run_sed_scripts(file_path: Path,
   """
   if scripts == []:
     raise RuntimeError(f"No scripts specified for file {str(file_path)}")
-  cmd = f"sed -E {' -E '.join(scripts)} {str(file_path)}"
+  cmd = f"sed -e {' -e '.join(scripts)} {str(file_path)}"
   print(f"Running command: {cmd}")
   if not is_dry_run:
     try:
