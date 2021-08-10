@@ -36,7 +36,7 @@ BASE_DIR="${TEMP_DIR}/tflm_tree"
 OUTPUT_DIR="${TEMP_DIR}/tflm_arduino"
 TARGET=cortex_m_generic
 OPTIMIZED_KERNEL_DIR=cmsis_nn
-TARGET_ARCH=cortex-m4
+TARGET_ARCH=project_generation
 
 # Create the TFLM base tree
 python3 tensorflow/lite/micro/tools/project_generation/create_tflm_tree.py \
