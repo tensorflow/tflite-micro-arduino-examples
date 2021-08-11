@@ -40,7 +40,6 @@ TARGET_ARCH=project_generation
 
 # Create the TFLM base tree
 python3 tensorflow/lite/micro/tools/project_generation/create_tflm_tree.py \
-  -e hello_world -e magic_wand -e micro_speech -e person_detection \
   --makefile_options="TARGET=${TARGET} OPTIMIZED_KERNEL_DIR=${OPTIMIZED_KERNEL_DIR} TARGET_ARCH=${TARGET_ARCH}" \
   "${BASE_DIR}"
 
