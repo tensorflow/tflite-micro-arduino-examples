@@ -5,12 +5,12 @@
 # https://yaml-online-parser.appspot.com/
 #
 
-name: Sync from tflite-micro
+name: (Arduino) Sync from tflite-micro
 
 on:
   schedule:
-    # 2pm UTC is 7am or 8am PT depending on daylight savings.
-    - cron: '0 14 * * *'
+    # 10am UTC is 3am or 4am PT depending on daylight savings.
+    - cron: '0 10 * * *'
 
   # Allow manually triggering of the workflow.
   workflow_dispatch: {}
@@ -31,7 +31,7 @@ jobs:
 
       - name: Sync the code
         run: |
-          pip3 install six
+          pip3 install six Pillow
           ./scripts/sync_from_tflite_micro.sh
           git config --local user.name "TFLM-bot"
           git config --local user.email "tflm-github-bot@google.com"
@@ -50,10 +50,10 @@ jobs:
           branch: sync-from-tflite-micro
           delete-branch: true
           token: ${{ secrets.TFLM_BOT_REPO_TOKEN }}
-          title: Automated sync from github.com/tensorflow/tflite-micro
+          title: (Arduino) Automated sync from github.com/tensorflow/tflite-micro
           commit-message: Automated sync from github.com/tensorflow/tflite-micro
           committer: TFLM-bot <tflm-github-bot@google.com>
           author: TFLM-bot <tflm-github-bot@google.com>
-          body: "Automated sync from github.com/tensorflow/tflite-micro"
+          body: "(Arduino) Automated sync from github.com/tensorflow/tflite-micro"
           labels: bot:sync-tf, ci:run
           reviewers: advaitjain
