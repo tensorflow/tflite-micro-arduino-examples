@@ -14,3 +14,4 @@ repository, you can clone the repo into `~/Arduino/libraries` and then open up t
 TFLM examples in your Arduino IDE.
 
 ![Hello World](docs/hello_world_screenshot.png)
+
