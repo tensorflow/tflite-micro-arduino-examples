@@ -21,8 +21,8 @@
  * Title:        arm_convolve_HWC_q7_fast.c
  * Description:  Fast Q7 version of convolution
  *
- * $Date:        January 26, 2021
- * $Revision:    V.1.0.2
+ * $Date:        July 20, 2021
+ * $Revision:    V.1.1.2
  *
  * Target Processor:  Cortex-M cores
  *
@@ -72,7 +72,7 @@
  *
  * ch_im_in is multiple of 4    ( because of the SIMD32 read and swap )
  *
- * ch_im_out is multipe of 2    ( bacause 2x2 mat_mult kernel )
+ * ch_im_out is multiple of 2    ( bacause 2x2 mat_mult kernel )
  *
  * The im2col converts the Q7 tensor input into Q15 column, which is stored in
  * bufferA. There is reordering happenning during this im2col process with
@@ -105,7 +105,7 @@ arm_status arm_convolve_HWC_q7_fast(const q7_t *Im_in,
                                     q7_t *bufferB)
 {
     (void)bufferB;
-#if defined(ARM_MATH_DSP)
+#if defined(ARM_MATH_DSP) && !defined(ARM_MATH_MVEI)
     /* Run the following code for Cortex-M4 and Cortex-M7 */
 
     int16_t i_out_y, i_out_x, i_ker_y, i_ker_x;

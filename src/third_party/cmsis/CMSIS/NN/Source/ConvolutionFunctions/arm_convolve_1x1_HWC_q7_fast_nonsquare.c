@@ -21,8 +21,8 @@
  * Title:        arm_convolve_1x1_HWC_q7_fast_nonsquare.c
  * Description:  Fast Q7 version of 1x1 convolution (non-square shape)
  *
- * $Date:        January 26, 2021
- * $Revision:    V.1.0.2
+ * $Date:        July 20, 2021
+ * $Revision:    V.1.1.2
  *
  * Target Processor:  Cortex-M cores
  *
@@ -70,7 +70,7 @@
  * separable convolution.
  *
  * This function is the version with full list of optimization tricks, but with
- * some contraints:
+ * some constraints:
  *   ch_im_in is multiple of 4
  *   ch_im_out is multiple of 2
  *
@@ -100,7 +100,7 @@ arm_status arm_convolve_1x1_HWC_q7_fast_nonsquare(const q7_t *Im_in,
                                                   q7_t *bufferB)
 {
     (void)bufferB;
-#if defined(ARM_MATH_DSP)
+#if defined(ARM_MATH_DSP) && !defined(ARM_MATH_MVEI)
     /* Run the following code for Cortex-M4 and Cortex-M7 */
     (void)dim_im_in_y;
     int16_t i_out_y, i_out_x;
