@@ -3,9 +3,10 @@
  * Title:        arm_common_tables.h
  * Description:  Extern declaration for common tables
  *
- * @version  V1.9.0
- * @date     17. March 2021
+ * @version  V1.10.0
+ * @date     08 July 2021
  *
+ * Target Processor: Cortex-M and Cortex-A cores
  * -------------------------------------------------------------------- */
 /*
  * Copyright (C) 2010-2021 ARM Limited or its affiliates. All rights reserved.

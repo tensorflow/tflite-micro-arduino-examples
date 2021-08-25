@@ -1,8 +1,9 @@
 /******************************************************************************
  * @file     filtering_functions.h
  * @brief    Public header file for CMSIS DSP Library
- * @version  V1.9.0
- * @date     20. July 2020
+ * @version  V1.10.0
+ * @date     08 July 2021
+ * Target Processor: Cortex-M and Cortex-A cores
  ******************************************************************************/
 /*
  * Copyright (c) 2010-2020 Arm Limited or its affiliates. All rights reserved.
@@ -1172,10 +1173,17 @@ arm_status arm_fir_decimate_init_f32(
 
 
 #if defined(ARM_MATH_NEON) 
+/**
+  @brief         Compute new coefficient arrays for use in vectorized filter (Neon only).
+  @param[in]     numStages         number of 2nd order stages in the filter.
+  @param[in]     pCoeffs           points to the original filter coefficients.
+  @param[in]     pComputedCoeffs   points to the new computed coefficients for the vectorized version.
+  @return        none
+*/
 void arm_biquad_cascade_df2T_compute_coefs_f32(
-  arm_biquad_cascade_df2T_instance_f32 * S,
   uint8_t numStages,
-  float32_t * pCoeffs);
+  const float32_t * pCoeffs,
+  float32_t * pComputedCoeffs);
 #endif
   /**
    * @brief  Initialization function for the floating-point transposed direct form II Biquad cascade filter.
