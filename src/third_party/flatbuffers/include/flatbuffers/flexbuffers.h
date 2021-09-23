@@ -493,7 +493,7 @@ class Reference {
           return static_cast<double>(ReadUInt64(Indirect(), byte_width_));
         case FBT_NULL: return 0.0;
         case FBT_STRING: {
-#if 1
+#if !defined( _MSC_VER)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wnull-dereference"
           // TODO(b/173239141): Patched via micro/tools/make/flexbuffers_download.sh
