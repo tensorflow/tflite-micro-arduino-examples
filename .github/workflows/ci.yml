@@ -47,3 +47,9 @@ jobs:
       - name: Build patched binaries
         run: |
           ./scripts/test_arduino_library.sh "${PWD}"
+
+      - name: Test patched builds in Renode
+        uses: antmicro/renode-test-action@v1.0.0
+        with:
+          renode-version: '1.12.0+20210914gitc77eea21'
+          tests-to-run: 'examples/**/*.robot'
