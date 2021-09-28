@@ -34,7 +34,16 @@ jobs:
     name: Arduino CLI Build
     steps:
       - uses: actions/checkout@v2
+
       - name: Test
         run: |
           ./scripts/install_arduino_cli.sh
+          ./scripts/test_arduino_library.sh "${PWD}"
+
+      - name: Apply serial patch on tflite-micro
+        run: |
+          sed --in-place '/#define DEBUG_SERIAL_OBJECT/s/(Serial)/(Serial1)/' src/tensorflow/lite/micro/system_setup.cpp
+
+      - name: Build patched binaries
+        run: |
           ./scripts/test_arduino_library.sh "${PWD}"
