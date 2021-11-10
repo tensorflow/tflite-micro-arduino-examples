@@ -36,17 +36,24 @@ def _run_sed_scripts(file_path: Path,
     file_path: The full path to the input file
     scripts: A list of strings, each containing a single SED script
     is_dry_run: if True, do not execute any commands
+
+  Raises:
+    CalledProcessError: command executed by the subshell had an error
   """
   if scripts == []:
     raise RuntimeError(f"No scripts specified for file {str(file_path)}")
-  cmd = f"sed -E {' -E '.join(scripts)} {str(file_path)}"
+  cmd = f"sed -e {' -e '.join(scripts)} {str(file_path)}"
   print(f"Running command: {cmd}")
   if not is_dry_run:
-    result = subprocess.run(cmd,
-                            shell=True,
-                            check=True,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE)
+    try:
+      result = subprocess.run(cmd,
+                              shell=True,
+                              check=True,
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError as ex:
+      print(f"SED command failed, error: {str(ex.stderr, encoding='utf-8')}\n")
+      raise ex from None
     print(f"Saving output to: {str(file_path)}")
     file_path.write_bytes(result.stdout)
 
@@ -102,15 +109,23 @@ def _run_python_script(path_to_script: str,
     path_to_script: The full path to the Python script
     args: a string containing all the script arguments
     is_dry_run: if True, do not execute any commands
+
+  Raises:
+    CalledProcessError: command executed by the subshell had an error
   """
   cmd = f"python3 {path_to_script} {args}"
   print(f"Running command: {cmd}")
   if not is_dry_run:
-    _ = subprocess.run(cmd,
-                       shell=True,
-                       check=True,
-                       stdout=subprocess.PIPE,
-                       stderr=subprocess.PIPE)
+    try:
+      _ = subprocess.run(cmd,
+                         shell=True,
+                         check=True,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE)
+    except subprocess.CalledProcessError as ex:
+      print(
+          f"Python script failed, error: {str(ex.stderr, encoding='utf-8')}\n")
+      raise ex from None
 
 
 def _create_directories(paths: List[Path], is_dry_run: bool = True) -> None:
