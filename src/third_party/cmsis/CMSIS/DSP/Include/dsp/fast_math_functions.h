@@ -149,6 +149,21 @@ extern "C"
         uint32_t blockSize);
 
 
+
+/**
+  @brief         Floating-point vector of log values.
+  @param[in]     pSrc       points to the input vector
+  @param[out]    pDst       points to the output vector
+  @param[in]     blockSize  number of samples in each vector
+  @return        none
+ */
+  void arm_vlog_f64(
+  const float64_t * pSrc,
+		float64_t * pDst,
+		uint32_t blockSize);
+
+
+
   /**
    * @brief  q31 vector of log values.
    * @param[in]     pSrc       points to the input vector in q31
@@ -185,6 +200,22 @@ extern "C"
         float32_t * pDst,
         uint32_t blockSize);
 
+
+
+/**
+  @brief         Floating-point vector of exp values.
+  @param[in]     pSrc       points to the input vector
+  @param[out]    pDst       points to the output vector
+  @param[in]     blockSize  number of samples in each vector
+  @return        none
+ */
+  void arm_vexp_f64(
+  const float64_t * pSrc,
+		float64_t * pDst,
+		uint32_t blockSize);
+
+
+
  /**
    * @defgroup SQRT Square Root
    *
@@ -220,7 +251,7 @@ extern "C"
                    - \ref ARM_MATH_ARGUMENT_ERROR : input value is negative; *pOut is set to 0
  */
 __STATIC_FORCEINLINE arm_status arm_sqrt_f32(
-  float32_t in,
+  const float32_t in,
   float32_t * pOut)
   {
     if (in >= 0.0f)
@@ -291,15 +322,6 @@ arm_status arm_sqrt_q15(
   float32_t * pOut,
   uint16_t len);
 
-  void arm_vsqrt_q31(
-  q31_t * pIn,
-  q31_t * pOut,
-  uint16_t len);
-
-  void arm_vsqrt_q15(
-  q15_t * pIn,
-  q15_t * pOut,
-  uint16_t len);
 
   /**
    * @} end of SQRT group
@@ -320,6 +342,23 @@ arm_status arm_sqrt_q15(
 arm_status arm_divide_q15(q15_t numerator,
   q15_t denominator,
   q15_t *quotient,
+  int16_t *shift);
+
+  /**
+  @brief         Fixed point division
+  @param[in]     numerator    Numerator
+  @param[in]     denominator  Denominator
+  @param[out]    quotient     Quotient value normalized between -1.0 and 1.0
+  @param[out]    shift        Shift left value to get the unnormalized quotient
+  @return        error status
+
+  When dividing by 0, an error ARM_MATH_NANINF is returned. And the quotient is forced
+  to the saturated negative or positive value.
+ */
+
+arm_status arm_divide_q31(q31_t numerator,
+  q31_t denominator,
+  q31_t *quotient,
   int16_t *shift);
 
 
