@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,19 +14,20 @@
 # limitations under the License.
 # ==============================================================================
 #
-# Installs the latest arduino-cli tool in /tmp/arduino-cli
+# Tests the local git repo to make sure the Arduino examples can successfully
+# be built using the Arduino CLI.
 
 set -e
 
-cd /tmp
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="${SCRIPT_DIR}/.."
+cd "${ROOT_DIR}"
 
-rm -rf arduino-cli*
-curl -L -O "https://github.com/arduino/arduino-cli/releases/download/0.19.3/arduino-cli_0.19.3_Linux_64bit.tar.gz"
-tar xzf arduino-cli_0.19.3_Linux_64bit.tar.gz
+source "${SCRIPT_DIR}"/helper_functions.sh
 
-# To use with MacOS, replace the previous two lines with:
-# curl -L -O "https://github.com/arduino/arduino-cli/releases/download/0.19.3/arduino-cli_0.19.3_MacOS_64bit.tar.gz"
-# tar xzf arduino-cli_0.19.3_MacOS_64bit.tar.gz
+readable_run "${SCRIPT_DIR}"/install_arduino_cli.sh
 
-/tmp/arduino-cli core update-index
-/tmp/arduino-cli core install arduino:mbed
+# test_arduino_libarary.sh must be passed a normalized path,
+# thus the cd ${ROOT_DIR} above is required for ${PWD} here.
+readable_run "${SCRIPT_DIR}"/test_arduino_library.sh \
+  "${PWD}"
