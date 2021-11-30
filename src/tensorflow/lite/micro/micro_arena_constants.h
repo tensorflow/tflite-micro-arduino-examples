@@ -1,4 +1,4 @@
-/* Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,10 +13,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef TENSORFLOW_LITE_MICRO_BENCHMARKS_KEYWORD_SCRAMBLED_MODEL_DATA_H_
-#define TENSORFLOW_LITE_MICRO_BENCHMARKS_KEYWORD_SCRAMBLED_MODEL_DATA_H_
+#ifndef TENSORFLOW_LITE_MICRO_MICRO_ARENA_CONSTANTS_H_
+#define TENSORFLOW_LITE_MICRO_MICRO_ARENA_CONSTANTS_H_
 
-extern const unsigned char g_keyword_scrambled_model_data[];
-extern const unsigned int g_keyword_scrambled_model_data_length;
+namespace tflite {
 
-#endif  // TENSORFLOW_LITE_MICRO_BENCHMARKS_KEYWORD_SCRAMBLED_MODEL_DATA_H_
+// The default buffer alignment requirement.
+// We align tensor buffers to 16-byte boundaries, since this is a common
+// requirement for SIMD extensions.
+constexpr int MicroArenaBufferAlignment() { return 16; }
+
+}  // namespace tflite
+
+#endif  // TENSORFLOW_LITE_MICRO_MICRO_ARENA_CONSTANTS_H_
