@@ -41,6 +41,7 @@ cp -a ${LIBRARY_DIR} "${ARDUINO_LIBRARIES_DIR}"
 InstallLibraryDependencies () {
   # Required by magic_wand
   ${ARDUINO_CLI_TOOL} lib install Arduino_LSM9DS1@1.1.0
+  ${ARDUINO_CLI_TOOL} lib install ArduinoBLE@1.2.1
 
   # Required by person_detection
   ${ARDUINO_CLI_TOOL} lib install JPEGDecoder@1.8.0
