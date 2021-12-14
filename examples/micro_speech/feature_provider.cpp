@@ -44,9 +44,13 @@ TfLiteStatus FeatureProvider::PopulateFeatureData(
   // Quantize the time into steps as long as each window stride, so we can
   // figure out which audio data we need to fetch.
   const int last_step = (last_time_in_ms / kFeatureSliceStrideMs);
-  const int current_step = (time_in_ms / kFeatureSliceStrideMs);
-
-  int slices_needed = current_step - last_step;
+  // Number of new 20ms slices from which we can take 30ms samples
+  int slices_needed =
+      ((((time_in_ms - last_time_in_ms) - kFeatureSliceDurationMs) *
+        kFeatureSliceStrideMs) /
+           kFeatureSliceStrideMs +
+       kFeatureSliceStrideMs) /
+      kFeatureSliceStrideMs;
   // If this is the first call, make sure we don't use any cached information.
   if (is_first_run_) {
     TfLiteStatus init_status = InitializeMicroFeatures(error_reporter);
@@ -54,10 +58,13 @@ TfLiteStatus FeatureProvider::PopulateFeatureData(
       return init_status;
     }
     is_first_run_ = false;
-    slices_needed = kFeatureSliceCount;
+    return kTfLiteOk;
   }
   if (slices_needed > kFeatureSliceCount) {
     slices_needed = kFeatureSliceCount;
+  }
+  if (slices_needed == 0) {
+    return kTfLiteOk;
   }
   *how_many_new_slices = slices_needed;
 
@@ -92,18 +99,18 @@ TfLiteStatus FeatureProvider::PopulateFeatureData(
   if (slices_needed > 0) {
     for (int new_slice = slices_to_keep; new_slice < kFeatureSliceCount;
          ++new_slice) {
-      const int new_step = (current_step - kFeatureSliceCount + 1) + new_slice;
+      const int new_step = last_step + (new_slice - slices_to_keep);
       const int32_t slice_start_ms = (new_step * kFeatureSliceStrideMs);
       int16_t* audio_samples = nullptr;
       int audio_samples_size = 0;
-      // TODO(petewarden): Fix bug that leads to non-zero slice_start_ms
-      GetAudioSamples(error_reporter, (slice_start_ms > 0 ? slice_start_ms : 0),
-                      kFeatureSliceDurationMs, &audio_samples_size,
-                      &audio_samples);
-      if (audio_samples_size < kMaxAudioSampleSize) {
+      GetAudioSamples(error_reporter, slice_start_ms, kFeatureSliceDurationMs,
+                      &audio_samples_size, &audio_samples);
+      constexpr int wanted =
+          kFeatureSliceDurationMs * (kAudioSampleFrequency / 1000);
+      if (audio_samples_size != wanted) {
         TF_LITE_REPORT_ERROR(error_reporter,
                              "Audio data size %d too small, want %d",
-                             audio_samples_size, kMaxAudioSampleSize);
+                             audio_samples_size, wanted);
         return kTfLiteError;
       }
       int8_t* new_slice_data = feature_data_ + (new_slice * kFeatureSliceSize);
