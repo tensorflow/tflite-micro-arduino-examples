@@ -31,6 +31,10 @@ extern "C" void DebugLog(const char* s) { DEBUG_SERIAL_OBJECT.print(s); }
 
 namespace tflite {
 
-void InitializeTarget() { DEBUG_SERIAL_OBJECT.begin(9600); }
+void InitializeTarget() {
+  DEBUG_SERIAL_OBJECT.begin(9600);
+  while (!DEBUG_SERIAL_OBJECT) {
+  }  // allow for Arduino IDE Serial Monitor synchronization
+}
 
 }  // namespace tflite
