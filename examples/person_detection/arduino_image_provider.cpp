@@ -13,27 +13,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include "image_provider.h"
+#include <algorithm>
+#include <type_traits>
 
-/*
- * The sample requires the following third-party libraries to be installed and
- * configured:
- *
- * Arducam
- * -------
- * 1. Download https://github.com/ArduCAM/Arduino and copy its `ArduCAM`
- *    subdirectory into `Arduino/libraries`. Commit #e216049 has been tested
- *    with this code.
- * 2. Edit `Arduino/libraries/ArduCAM/memorysaver.h` and ensure that
- *    "#define OV2640_MINI_2MP_PLUS" is not commented out. Ensure all other
- *    defines in the same section are commented out.
- *
- * JPEGDecoder
- * -----------
- * 1. Install "JPEGDecoder" 1.8.0 from the Arduino library manager.
- * 2. Edit "Arduino/Libraries/JPEGDecoder/src/User_Config.h" and comment out
- *    "#define LOAD_SD_LIBRARY" and "#define LOAD_SDFAT_LIBRARY".
- */
+#include "image_provider.h"
+#include "model_settings.h"
+#include "tensorflow/lite/micro/micro_utils.h"
+#include "test_over_serial/test_over_serial.h"
+
+using namespace test_over_serial;
 
 #if defined(ARDUINO) && !defined(ARDUINO_ARDUINO_NANO33BLE)
 #define ARDUINO_EXCLUDE_CODE
@@ -41,204 +29,74 @@ limitations under the License.
 
 #ifndef ARDUINO_EXCLUDE_CODE
 
-// Required by Arducam library
-#include <SPI.h>
-#include <Wire.h>
-#include <memorysaver.h>
-// Arducam library
-#include <ArduCAM.h>
-// JPEGDecoder library
-#include <JPEGDecoder.h>
+#include "Arduino.h"
 
-// Checks that the Arducam library has been correctly configured
-#if !(defined OV2640_MINI_2MP_PLUS)
-#error Please select the hardware platform and camera module in the Arduino/libraries/ArduCAM/memorysaver.h
-#endif
+namespace {
 
-// The size of our temporary buffer for holding
-// JPEG data received from the Arducam module
-#define MAX_JPEG_BYTES 4096
-// The pin connected to the Arducam Chip Select
-#define CS 7
+constexpr size_t kQQVGA_width = 160;   // pixels
+constexpr size_t kQQVGA_height = 120;  // pixels
 
-// Camera library instance
-ArduCAM myCAM(OV2640, CS);
-// Temporary buffer for holding JPEG data from camera
-uint8_t jpeg_buffer[MAX_JPEG_BYTES] = {0};
-// Length of the JPEG data currently in the buffer
-uint32_t jpeg_length = 0;
+uint8_t image_buffer[kQQVGA_height * kQQVGA_width];
+constexpr size_t kImageBufferLength =
+    std::extent<decltype(image_buffer)>::value;
 
 // Get the camera module ready
 TfLiteStatus InitCamera(tflite::ErrorReporter* error_reporter) {
-  TF_LITE_REPORT_ERROR(error_reporter, "Attempting to start Arducam");
-  // Enable the Wire library
-  Wire.begin();
-  // Configure the CS pin
-  pinMode(CS, OUTPUT);
-  digitalWrite(CS, HIGH);
-  // initialize SPI
-  SPI.begin();
-  // Reset the CPLD
-  myCAM.write_reg(0x07, 0x80);
-  delay(100);
-  myCAM.write_reg(0x07, 0x00);
-  delay(100);
-  // Test whether we can communicate with Arducam via SPI
-  myCAM.write_reg(ARDUCHIP_TEST1, 0x55);
-  uint8_t test;
-  test = myCAM.read_reg(ARDUCHIP_TEST1);
-  if (test != 0x55) {
-    TF_LITE_REPORT_ERROR(error_reporter, "Can't communicate with Arducam");
-    delay(1000);
-    return kTfLiteError;
-  }
-  // Use JPEG capture mode, since it allows us to specify
-  // a resolution smaller than the full sensor frame
-  myCAM.set_format(JPEG);
-  myCAM.InitCAM();
-  // Specify the smallest possible resolution
-  myCAM.OV2640_set_JPEG_size(OV2640_160x120);
-  delay(100);
+  // This function kept for future implementation
+  TF_LITE_REPORT_ERROR(
+      error_reporter,
+      "OV7675 not yet supported.  Blank image will be substituted.");
   return kTfLiteOk;
 }
 
 // Begin the capture and wait for it to finish
 TfLiteStatus PerformCapture(tflite::ErrorReporter* error_reporter) {
+  // This function kept for future implementation
   TF_LITE_REPORT_ERROR(error_reporter, "Starting capture");
-  // Make sure the buffer is emptied before each capture
-  myCAM.flush_fifo();
-  myCAM.clear_fifo_flag();
-  // Start capture
-  myCAM.start_capture();
-  // Wait for indication that it is done
-  while (!myCAM.get_bit(ARDUCHIP_TRIG, CAP_DONE_MASK)) {
-  }
-  TF_LITE_REPORT_ERROR(error_reporter, "Image captured");
   delay(50);
-  // Clear the capture done flag
-  myCAM.clear_fifo_flag();
+  TF_LITE_REPORT_ERROR(error_reporter, "Image captured");
   return kTfLiteOk;
 }
 
 // Read data from the camera module into a local buffer
 TfLiteStatus ReadData(tflite::ErrorReporter* error_reporter) {
-  // This represents the total length of the JPEG data
-  jpeg_length = myCAM.read_fifo_length();
-  TF_LITE_REPORT_ERROR(error_reporter, "Reading %d bytes from Arducam",
-                       jpeg_length);
-  // Ensure there's not too much data for our buffer
-  if (jpeg_length > MAX_JPEG_BYTES) {
-    TF_LITE_REPORT_ERROR(error_reporter, "Too many bytes in FIFO buffer (%d)",
-                         MAX_JPEG_BYTES);
-    return kTfLiteError;
-  }
-  if (jpeg_length == 0) {
-    TF_LITE_REPORT_ERROR(error_reporter, "No data in Arducam FIFO buffer");
-    return kTfLiteError;
-  }
-  myCAM.CS_LOW();
-  myCAM.set_fifo_burst();
-  for (int index = 0; index < jpeg_length; index++) {
-    jpeg_buffer[index] = SPI.transfer(0x00);
-  }
-  delayMicroseconds(15);
-  TF_LITE_REPORT_ERROR(error_reporter, "Finished reading");
-  myCAM.CS_HIGH();
+  // This function kept for future implementation
+  // until OV7675 supported, just fill with zeros (black image)
+  std::fill_n(image_buffer, kImageBufferLength, 0);
   return kTfLiteOk;
 }
 
-// Decode the JPEG image, crop it, and convert it to greyscale
-TfLiteStatus DecodeAndProcessImage(tflite::ErrorReporter* error_reporter,
-                                   int image_width, int image_height,
-                                   int8_t* image_data) {
-  TF_LITE_REPORT_ERROR(error_reporter,
-                       "Decoding JPEG and converting to greyscale");
-  // Parse the JPEG headers. The image will be decoded as a sequence of Minimum
-  // Coded Units (MCUs), which are 16x8 blocks of pixels.
-  JpegDec.decodeArray(jpeg_buffer, jpeg_length);
+// Decode the image, crop it, and convert it to grayscale
+TfLiteStatus CropAndQuantizeImage(tflite::ErrorReporter* error_reporter,
+                                  size_t image_width, size_t image_height,
+                                  const TfLiteTensor* tensor) {
+  TF_LITE_REPORT_ERROR(error_reporter, "Cropping image and quantizing");
 
-  // Crop the image by keeping a certain number of MCUs in each dimension
-  const int keep_x_mcus = image_width / JpegDec.MCUWidth;
-  const int keep_y_mcus = image_height / JpegDec.MCUHeight;
+  // cropping parameters
+  const size_t vert_top = (image_height - kNumRows) / 2;
+  const size_t vert_bottom = vert_top + kNumRows - 1;
+  const size_t horz_left = (image_width - kNumCols) / 2;
+  const size_t horz_right = horz_left + kNumCols - 1;
 
-  // Calculate how many MCUs we will throw away on the x axis
-  const int skip_x_mcus = JpegDec.MCUSPerRow - keep_x_mcus;
-  // Roughly center the crop by skipping half the throwaway MCUs at the
-  // beginning of each row
-  const int skip_start_x_mcus = skip_x_mcus / 2;
-  // Index where we will start throwing away MCUs after the data
-  const int skip_end_x_mcu_index = skip_start_x_mcus + keep_x_mcus;
-  // Same approach for the columns
-  const int skip_y_mcus = JpegDec.MCUSPerCol - keep_y_mcus;
-  const int skip_start_y_mcus = skip_y_mcus / 2;
-  const int skip_end_y_mcu_index = skip_start_y_mcus + keep_y_mcus;
-
-  // Pointer to the current pixel
-  uint16_t* pImg;
-  // Color of the current pixel
-  uint16_t color;
-
-  // Loop over the MCUs
-  while (JpegDec.read()) {
-    // Skip over the initial set of rows
-    if (JpegDec.MCUy < skip_start_y_mcus) {
-      continue;
+  const uint8_t* p = image_buffer + (vert_top * image_width);
+  p += horz_left;
+  int8_t* image_data = tensor->data.int8;
+  for (size_t line = vert_top; line <= vert_bottom; line++) {
+    for (size_t row = horz_left; row <= horz_right; row++, p++) {
+      *image_data++ = tflite::FloatToQuantizedType<int8_t>(
+          p[0] / 255.0f, tensor->params.scale, tensor->params.zero_point);
     }
-    // Skip if we're on a column that we don't want
-    if (JpegDec.MCUx < skip_start_x_mcus ||
-        JpegDec.MCUx >= skip_end_x_mcu_index) {
-      continue;
-    }
-    // Skip if we've got all the rows we want
-    if (JpegDec.MCUy >= skip_end_y_mcu_index) {
-      continue;
-    }
-    // Pointer to the current pixel
-    pImg = JpegDec.pImage;
-
-    // The x and y indexes of the current MCU, ignoring the MCUs we skip
-    int relative_mcu_x = JpegDec.MCUx - skip_start_x_mcus;
-    int relative_mcu_y = JpegDec.MCUy - skip_start_y_mcus;
-
-    // The coordinates of the top left of this MCU when applied to the output
-    // image
-    int x_origin = relative_mcu_x * JpegDec.MCUWidth;
-    int y_origin = relative_mcu_y * JpegDec.MCUHeight;
-
-    // Loop through the MCU's rows and columns
-    for (int mcu_row = 0; mcu_row < JpegDec.MCUHeight; mcu_row++) {
-      // The y coordinate of this pixel in the output index
-      int current_y = y_origin + mcu_row;
-      for (int mcu_col = 0; mcu_col < JpegDec.MCUWidth; mcu_col++) {
-        // Read the color of the pixel as 16-bit integer
-        color = *pImg++;
-        // Extract the color values (5 red bits, 6 green, 5 blue)
-        uint8_t r, g, b;
-        r = ((color & 0xF800) >> 11) * 8;
-        g = ((color & 0x07E0) >> 5) * 4;
-        b = ((color & 0x001F) >> 0) * 8;
-        // Convert to grayscale by calculating luminance
-        // See https://en.wikipedia.org/wiki/Grayscale for magic numbers
-        float gray_value = (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
-
-        // Convert to signed 8-bit integer by subtracting 128.
-        gray_value -= 128;
-
-        // The x coordinate of this pixel in the output image
-        int current_x = x_origin + mcu_col;
-        // The index of this pixel in our flat output buffer
-        int index = (current_y * image_width) + current_x;
-        image_data[index] = static_cast<int8_t>(gray_value);
-      }
-    }
+    // move to next line
+    p += ((image_width - 1) - horz_right) + horz_left;
   }
-  TF_LITE_REPORT_ERROR(error_reporter, "Image decoded and processed");
+
+  TF_LITE_REPORT_ERROR(error_reporter, "Image cropped and quantized");
   return kTfLiteOk;
 }
 
 // Get an image from the camera module
-TfLiteStatus GetImage(tflite::ErrorReporter* error_reporter, int image_width,
-                      int image_height, int channels, int8_t* image_data) {
+TfLiteStatus GetCameraImage(tflite::ErrorReporter* error_reporter,
+                            const TfLiteTensor* tensor) {
   static bool g_is_camera_initialized = false;
   if (!g_is_camera_initialized) {
     TfLiteStatus init_status = InitCamera(error_reporter);
@@ -261,14 +119,81 @@ TfLiteStatus GetImage(tflite::ErrorReporter* error_reporter, int image_width,
     return read_data_status;
   }
 
-  TfLiteStatus decode_status = DecodeAndProcessImage(
-      error_reporter, image_width, image_height, image_data);
+  TfLiteStatus decode_status =
+      CropAndQuantizeImage(error_reporter, kQQVGA_width, kQQVGA_height, tensor);
   if (decode_status != kTfLiteOk) {
-    TF_LITE_REPORT_ERROR(error_reporter, "DecodeAndProcessImage failed");
+    TF_LITE_REPORT_ERROR(error_reporter, "CropAndQuantizeImage failed");
     return decode_status;
   }
 
   return kTfLiteOk;
+}
+
+TfLiteStatus GetTestImage(tflite::ErrorReporter* error_reporter,
+                          TestOverSerial& test, const TfLiteTensor* tensor) {
+  volatile bool done = false;
+  volatile bool aborted = false;
+  volatile size_t image_width = 0, image_height = 0;
+
+  InputHandler handler = [&aborted, &done, &image_width,
+                          &image_height](const InputBuffer* const input) {
+    if (0 == input->offset) {
+      if ((kQQVGA_height * kQQVGA_width) == input->total) {
+        image_width = kQQVGA_width;
+        image_height = kQQVGA_height;
+      } else if ((kNumCols * kNumRows) == input->total) {
+        image_width = kNumCols;
+        image_height = kNumRows;
+      } else {
+        // image dimensions are not supported, abort input processing
+        aborted = true;
+        return false;
+      }
+    }
+
+    std::copy_n(input->data.uint8, input->length, &image_buffer[input->offset]);
+    if (input->total == (input->offset + input->length)) {
+      done = true;
+    }
+    return true;
+  };
+
+  while (!done) {
+    test.ProcessInput(&handler);
+    if (aborted) {
+      TF_LITE_REPORT_ERROR(error_reporter, "Input processing aborted");
+      return kTfLiteError;
+    }
+    // wait for a full image from serial port before processing
+    if (done) {
+      TfLiteStatus decode_status = CropAndQuantizeImage(
+          error_reporter, image_width, image_height, tensor);
+      if (decode_status != kTfLiteOk) {
+        TF_LITE_REPORT_ERROR(error_reporter, "CropAndQuantizeImage failed");
+        return decode_status;
+      }
+    }
+  }
+
+  return kTfLiteOk;
+}
+
+}  // namespace
+
+TfLiteStatus GetImage(tflite::ErrorReporter* error_reporter,
+                      const TfLiteTensor* tensor) {
+  TestOverSerial& test = TestOverSerial::Instance(kIMAGE_GRAYSCALE);
+  if (!test.IsTestMode()) {
+    // check serial port for test mode command
+    test.ProcessInput(nullptr);
+  }
+  if (test.IsTestMode()) {
+    return GetTestImage(error_reporter, test, tensor);
+  } else {
+    // get an image from the camera
+    return GetCameraImage(error_reporter, tensor);
+  }
+  // NOTREACHED
 }
 
 #endif  // ARDUINO_EXCLUDE_CODE
