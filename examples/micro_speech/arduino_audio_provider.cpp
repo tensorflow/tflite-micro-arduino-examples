@@ -19,9 +19,15 @@ limitations under the License.
 
 #ifndef ARDUINO_EXCLUDE_CODE
 
+#include <algorithm>
+#include <cmath>
+
 #include "PDM.h"
 #include "audio_provider.h"
 #include "micro_features_micro_model_settings.h"
+#include "test_over_serial/test_over_serial.h"
+
+using namespace test_over_serial;
 
 namespace {
 bool g_is_audio_initialized = false;
@@ -35,6 +41,10 @@ int16_t g_audio_output_buffer[kMaxAudioSampleSize];
 volatile int32_t g_latest_audio_timestamp = 0;
 // error reporter
 tflite::ErrorReporter* g_error_reporter;
+// test_over_serial sample index
+uint32_t g_test_sample_index;
+// test_over_serial silence insertion flag
+bool g_test_insert_silence = true;
 }  // namespace
 
 void CaptureSamples() {
@@ -112,6 +122,73 @@ TfLiteStatus GetAudioSamples(tflite::ErrorReporter* error_reporter,
   return kTfLiteOk;
 }
 
-int32_t LatestAudioTimestamp() { return g_latest_audio_timestamp; }
+namespace {
+
+void InsertSilence(const size_t len, int16_t value) {
+  for (size_t i = 0; i < len; i++) {
+    const size_t index = (g_test_sample_index + i) % kAudioCaptureBufferSize;
+    g_audio_capture_buffer[index] = value;
+  }
+  g_test_sample_index += len;
+}
+
+int32_t ProcessTestInput(TestOverSerial& test) {
+  constexpr size_t samples_16ms = ((kAudioSampleFrequency / 1000) * 16);
+
+  InputHandler handler = [](const InputBuffer* const input) {
+    if (0 == input->offset) {
+      // don't insert silence
+      g_test_insert_silence = false;
+    }
+
+    for (size_t i = 0; i < input->length; i++) {
+      const size_t index = (g_test_sample_index + i) % kAudioCaptureBufferSize;
+      g_audio_capture_buffer[index] = input->data.int16[i];
+    }
+    g_test_sample_index += input->length;
+
+    if (input->total == (input->offset + input->length)) {
+      // allow silence insertion again
+      g_test_insert_silence = true;
+    }
+    return true;
+  };
+
+  test.ProcessInput(&handler);
+
+  if (g_test_insert_silence) {
+    // add 16ms of silence just like the PDM interface
+    InsertSilence(samples_16ms, 0);
+  }
+
+  // Round the timestamp to a multiple of 64ms,
+  // This emulates the PDM interface during inference processing.
+  g_latest_audio_timestamp = (g_test_sample_index / (samples_16ms * 4)) * 64;
+  return g_latest_audio_timestamp;
+}
+
+}  // namespace
+
+int32_t LatestAudioTimestamp() {
+  TestOverSerial& test = TestOverSerial::Instance(kAUDIO_PCM_16KHZ_MONO_S16);
+  if (!test.IsTestMode()) {
+    // check serial port for test mode command
+    test.ProcessInput(nullptr);
+  }
+  if (test.IsTestMode()) {
+    if (g_is_audio_initialized) {
+      // stop capture from hardware
+      PDM.end();
+      g_is_audio_initialized = false;
+      g_test_sample_index =
+          g_latest_audio_timestamp * (kAudioSampleFrequency / 1000);
+    }
+    return ProcessTestInput(test);
+  } else {
+    // CaptureSamples() updated the timestamp
+    return g_latest_audio_timestamp;
+  }
+  // NOTREACHED
+}
 
 #endif  // ARDUINO_EXCLUDE_CODE

@@ -67,15 +67,15 @@ TfLiteStatus RecognizeCommands::ProcessLatestResults(
     return kTfLiteError;
   }
 
-  // Add the latest results to the head of the queue.
-  previous_results_.push_back({current_time_ms, latest_results->data.int8});
-
   // Prune any earlier results that are too old for the averaging window.
   const int64_t time_limit = current_time_ms - average_window_duration_ms_;
   while ((!previous_results_.empty()) &&
          previous_results_.front().time_ < time_limit) {
     previous_results_.pop_front();
   }
+
+  // Add the latest results to the head of the queue.
+  previous_results_.push_back({current_time_ms, latest_results->data.int8});
 
   // If there are too few results, assume the result will be unreliable and
   // bail.
