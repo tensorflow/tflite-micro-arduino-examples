@@ -56,6 +56,12 @@ class TestOverSerialImpl : public TestOverSerial {
     switch (data_type_) {
       case kIMAGE_GRAYSCALE:
         return "image-grayscale";
+      case kRAW_INT8:
+        return "raw-int8";
+      case kRAW_FLOAT:
+        return "raw-float";
+      case kAUDIO_PCM_16KHZ_MONO_S16:
+        return "audio-pcm-16khz-mono-s16";
       default:
         break;
     }

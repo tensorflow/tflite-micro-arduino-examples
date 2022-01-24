@@ -16,6 +16,7 @@
 """Script to run Arduino example tests over serial port"""
 
 import argparse
+from json.decoder import JSONDecodeError
 import threading
 from types import SimpleNamespace
 import serial
@@ -25,6 +26,8 @@ import queue
 import re
 import time
 import traceback
+import wave
+import json
 from PIL import Image
 from datetime import datetime
 from enum import Enum, unique
@@ -76,53 +79,12 @@ class TestOverSerial:
   # private methods
   #
 
-  def __init__(self) -> None:
+  def __init__(self, config) -> None:
     self._results = TestOverSerial.TestResults(total=0,
                                                completed=0,
                                                passed=0,
                                                failed=0)
-    self._config = {
-        "person_detection": {
-            "data type":
-                "image-grayscale",
-            "delay after":
-                4.0,
-            "test data": [
-                {
-                    "file name": "examples/person_detection/data/person.bmp",
-                    "label": "person",
-                    "regex": r"Person score: (\d+\.\d+)% "
-                             r"No person score: (\d+\.\d+)%",
-                    "expr": "groups[1] > groups[2]",
-                    "qqvga size": False,
-                },
-                {
-                    "file name": "examples/person_detection/data/no_person.bmp",
-                    "label": "no person",
-                    "regex": r"Person score: (\d+\.\d+)% "
-                             r"No person score: (\d+\.\d+)%",
-                    "expr": "groups[1] < groups[2]",
-                    "qqvga size": False,
-                },
-                {
-                    "file name": "examples/person_detection/data/person.bmp",
-                    "label": "person",
-                    "regex": r"Person score: (\d+\.\d+)% "
-                             r"No person score: (\d+\.\d+)%",
-                    "expr": "groups[1] > groups[2]",
-                    "qqvga size": True,
-                },
-                {
-                    "file name": "examples/person_detection/data/no_person.bmp",
-                    "label": "no person",
-                    "regex": r"Person score: (\d+\.\d+)% "
-                             r"No person score: (\d+\.\d+)%",
-                    "expr": "groups[1] < groups[2]",
-                    "qqvga size": True,
-                },
-            ]
-        }
-    }
+    self._config = config
 
   def _send_test_command(self) -> bool:
     serial_wrapper = SerialWrapper()
@@ -234,6 +196,15 @@ class TestOverSerial:
     except (FileNotFoundError, OSError) as ex:
       Main().fatal(f"Failed to open image <{str(path)}> ({str(ex)})")
 
+  def _load_wave(self, path: Path) -> bytes:
+    try:
+      wave_file: wave.Wave_read
+      with wave.open(str(path)) as wave_file:
+        samples = wave_file.readframes(wave_file.getnframes())
+        return samples
+    except wave.Error as ex:
+      Main().fatal(f"Failed to open wave audio <{str(path)}> ({str(ex)})")
+
   def _safe_eval(self, expr: str, groups: List[str], label: str) -> bool:
     if expr == "":
       return True
@@ -291,12 +262,9 @@ class TestOverSerial:
     """
     return self._results
 
-  def start_tests(self, example: "TestOverSerial.Example") -> None:
+  def start_tests(self) -> None:
     """
     Begin running the tests as per the example test configuration.
-
-    Args:
-      example: Which example test configuration to load.
 
     Raises:
       RuntimeError if an unrecoverable error occurs during the test run.
@@ -307,7 +275,7 @@ class TestOverSerial:
       main.fatal("Unable to place device into test mode")
 
     try:
-      config = self._config[example]
+      config = self._config
       data_type = str(config[TestOverSerial.ConfigKeys.TYPE])
       delay_after = float(config[TestOverSerial.ConfigKeys.DELAY])
       test_list = list(config[TestOverSerial.ConfigKeys.DATA])
@@ -321,6 +289,8 @@ class TestOverSerial:
         if data_type == TestOverSerial.DataType.IMAGE:
           datum = self._load_image_grayscale(
               file_path, use_qqvga=test_info[TestOverSerial.ConfigKeys.QQVGA])
+        elif data_type == TestOverSerial.DataType.AUDIO:
+          datum = self._load_wave(file_path)
         else:
           main.fatal(f"Data type <{data_type}> not yet supported")
 
@@ -331,7 +301,7 @@ class TestOverSerial:
                                  decode_length=decode_line_length)
         if not result:
           main.fatal(f"Test #{test_index} ABORTED during data transfer")
-        groups = ResultMatch().wait_match([pattern], timeout=1.0)
+        groups = ResultMatch().wait_match([pattern], timeout=3.0)
         if groups is None:
           # timeout waiting for regex pattern
           main.fatal(f"Test #{test_index} TIMEOUT waiting for inference result")
@@ -672,6 +642,7 @@ class Main:
     else:
       Main._instance = self
       self._args = self._parse_arguments().parse_args()
+      self._config = None
 
   def _parse_arguments(self) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -701,7 +672,26 @@ class Main:
         metavar="PATH",
         help="Full path of the serial port.  "
         "If not specified an appropriate default will be chosen.")
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help="Full path of the configuration file.  "
+        "If not specified an appropriate default will be chosen.")
     return parser
+
+  def _load_config(self):
+    if self._args.config is None:
+      self._args.config = Path(
+        f"examples/{self._args.example}/data/serial_test_config.json")
+    try:
+      with open(self._args.config) as fp:
+        self._config = json.load(fp)
+    except OSError as ex:
+      self.fatal(f"Unable to open config file ({str(ex)})")
+    except JSONDecodeError as ex:
+      self.fatal(f"Bad format for config file ({str(ex)})")
 
   #
   # public methods
@@ -715,14 +705,15 @@ class Main:
       True if all tests have passed.
       False if any test has failed or all tests are not completed.
     """
+    self._load_config()
     try:
       self.log_console("Test start:")
-      test = TestOverSerial()
+      test = TestOverSerial(self._config)
       serial_wrapper = SerialWrapper()
       input_handler = InputHandler()
       serial_wrapper.initialize(self._args.port)
       input_handler.start()
-      test.start_tests(self._args.example)
+      test.start_tests()
     finally:
       # cleanup before exit
       input_handler.stop()
