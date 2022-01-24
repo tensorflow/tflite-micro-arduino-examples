@@ -1,0 +1,34 @@
+{
+    "data type": "image-grayscale",
+    "delay after": 4.0,
+    "test data": [
+        {
+            "file name": "examples/person_detection/data/person.bmp",
+            "label": "person",
+            "regex": "Person score: (\\d+\\.\\d+)% No person score: (\\d+\\.\\d+)%",
+            "expr": "groups[1] > groups[2]",
+            "qqvga size": false
+        },
+        {
+            "file name": "examples/person_detection/data/no_person.bmp",
+            "label": "no person",
+            "regex": "Person score: (\\d+\\.\\d+)% No person score: (\\d+\\.\\d+)%",
+            "expr": "groups[1] < groups[2]",
+            "qqvga size": false
+        },
+        {
+            "file name": "examples/person_detection/data/person.bmp",
+            "label": "person",
+            "regex": "Person score: (\\d+\\.\\d+)% No person score: (\\d+\\.\\d+)%",
+            "expr": "groups[1] > groups[2]",
+            "qqvga size": true
+        },
+        {
+            "file name": "examples/person_detection/data/no_person.bmp",
+            "label": "no person",
+            "regex": "Person score: (\\d+\\.\\d+)% No person score: (\\d+\\.\\d+)%",
+            "expr": "groups[1] < groups[2]",
+            "qqvga size": true
+        }
+    ]
+}
