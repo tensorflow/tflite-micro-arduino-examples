@@ -15,6 +15,9 @@ limitations under the License.
 #ifndef TENSORFLOW_LITE_MICRO_SYSTEM_SETUP_H_
 #define TENSORFLOW_LITE_MICRO_SYSTEM_SETUP_H_
 
+#include <cstddef>
+#include <utility>
+
 namespace tflite {
 
 // This should called during initialization of TFLM binaries and tests. It can
@@ -23,5 +26,34 @@ namespace tflite {
 void InitializeTarget();
 
 }  // namespace tflite
+
+namespace test_over_serial {
+
+// computed for Arduino Nano 33 BLE Sense
+constexpr size_t kSerialMaxInputLength = (64);
+
+// Change baud rate on default serial port
+void SerialChangeBaudRate(const int baud);
+
+// SerialReadLine
+// Read a set of ASCII characters from the default
+// serial port.  Data is read up to the first newline ('\\n') character.
+// This function uses an internal buffer which is automatically reset.
+// The buffer will not contain the newline character.
+// The buffer will be zero ('\\0') terminated.
+// The <timeout> value is in milliseconds.  Any negative value means that
+// the wait for data will be forever.
+// Returns std::pair<size_t, char*>.
+// The first pair element is the number of characters in buffer not including
+// the newline character or zero terminator.
+// Returns {0, NULL} if the timeout occurs.
+std::pair<size_t, char*> SerialReadLine(int timeout);
+
+// SerialWrite
+// Write the ASCII characters in <buffer> to the default serial port.
+// The <buffer> must be zero terminated.
+void SerialWrite(const char* buffer);
+
+}  // namespace test_over_serial
 
 #endif  // TENSORFLOW_LITE_MICRO_SYSTEM_SETUP_H_
