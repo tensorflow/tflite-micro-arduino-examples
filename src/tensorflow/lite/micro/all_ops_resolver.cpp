@@ -30,7 +30,9 @@ AllOpsResolver::AllOpsResolver() {
   AddAveragePool2D();
   AddBatchToSpaceNd();
   AddCallOnce();
+  AddCast();
   AddCeil();
+  AddCircularBuffer();
   AddConcatenation();
   AddConv2D();
   AddCos();
@@ -49,9 +51,12 @@ AllOpsResolver::AllOpsResolver() {
   AddFloorDiv();
   AddFloorMod();
   AddFullyConnected();
+  AddGather();
+  AddGatherNd();
   AddGreater();
   AddGreaterEqual();
   AddHardSwish();
+  AddIf();
   AddL2Normalization();
   AddL2Pool2D();
   AddLeakyRelu();
@@ -66,6 +71,7 @@ AllOpsResolver::AllOpsResolver() {
   AddMaximum();
   AddMean();
   AddMinimum();
+  AddMirrorPad();
   AddMul();
   AddNeg();
   AddNotEqual();
@@ -85,6 +91,7 @@ AllOpsResolver::AllOpsResolver() {
   AddRsqrt();
   AddShape();
   AddSin();
+  AddSlice();
   AddSoftmax();
   AddSpaceToBatchNd();
   AddSpaceToDepth();
@@ -101,6 +108,7 @@ AllOpsResolver::AllOpsResolver() {
   AddTransposeConv();
   AddUnpack();
   AddVarHandle();
+  AddZerosLike();
 }
 
 }  // namespace tflite
