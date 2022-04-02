@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010-2021 Arm Limited or its affiliates. All rights reserved.
+ * Copyright (C) 2010-2021 Arm Limited or its affiliates.
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -21,8 +21,8 @@
  * Title:        arm_nnsupportfunctions.h
  * Description:  Public header file of support functions for CMSIS NN Library
  *
- * $Date:        24. Aug 2021
- * $Revision:    V.5.10.0
+ * $Date:        12. Nov 2021
+ * $Revision:    V.6.0.0
  *
  * Target Processor:  Cortex-M CPUs
  * -------------------------------------------------------------------- */
@@ -31,6 +31,7 @@
 #define _ARM_NNSUPPORTFUNCTIONS_H_
 
 #include "third_party/cmsis/CMSIS/NN/Include/arm_nn_math_types.h"
+#include "third_party/cmsis/CMSIS/NN/Include/arm_nn_types.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -298,33 +299,31 @@ arm_status arm_nn_mat_mul_core_1x_s8(int32_t row_elements,
                                      int32_t *const output);
 
 /**
- * @brief General Matrix-multiplication without requantization for four rows and one column
+ * @brief Matrix-multiplication with requantization & activation function for four rows and one column
  * @param[in]       row_elements  number of row elements
  * @param[in]       offset        offset between rows. Can be the same as row_elements.
  *                                For e.g, in a 1x1 conv scenario with stride as 1.
  * @param[in]       row_base      pointer to row operand
  * @param[in]       col_base      pointer to col operand
- * @param[out]      sum_col       pointer to store sum of column elements
- * @param[out]      output        pointer to store result(4 int32's) of multiply-accumulate
- * @return     The function returns the multiply-accumulated result of the row by column
+ * @param[in]       out_ch        Number of output channels
+ * @param[in]       conv_params   Pointer to convolution parameters like offsets and activation values
+ * @param[in]       quant_params  Pointer to per-channel quantization parameters
+ * @param[in]       bias          Pointer to per-channel bias
+ * @param[out]      output        Pointer to output where int8 results are stored.
  *
- * @details Pseudo-code
- *      output[0] = 0
- *         ..
- *      output[3] = 0
- *      sum_col = 0
- *      for (i = 0; i < row_elements; i++)
- *          output[0] += row_base[i] * col_base[i]
- *                ..
- *          output[3] += row_base[i + (row_elements * 3)] * col_base[i]
- *          sum_col += col_base[i]
+ * @return     The function returns the updated output pointer or NULL if implementation is not available.
+ *
+ * @details Compliant to TFLM int8 specification. MVE implementation only
  */
-arm_status arm_nn_mat_mul_core_4x_s8(const int32_t row_elements,
-                                     const int32_t offset,
-                                     const int8_t *row_base,
-                                     const int8_t *col_base,
-                                     int32_t *const sum_col,
-                                     int32_t *const output);
+int8_t *arm_nn_mat_mul_core_4x_s8(const int32_t row_elements,
+                                  const int32_t offset,
+                                  const int8_t *row_base,
+                                  const int8_t *col_base,
+                                  const int32_t out_ch,
+                                  const cmsis_nn_conv_params *conv_params,
+                                  const cmsis_nn_per_channel_quant_params *quant_params,
+                                  const int32_t *bias,
+                                  int8_t *output);
 
 /**
  * @brief General Matrix-multiplication function with per-channel requantization.
@@ -748,7 +747,7 @@ void arm_nn_mult_q7(q7_t *pSrcA, q7_t *pSrcB, q7_t *pDst, const uint16_t out_shi
  * @brief macro for adding rounding offset
  */
 #ifndef ARM_NN_TRUNCATE
-#define NN_ROUND(out_shift) ((0x1u << out_shift) >> 1)
+#define NN_ROUND(out_shift) ((0x1 << out_shift) >> 1)
 #else
 #define NN_ROUND(out_shift) 0
 #endif

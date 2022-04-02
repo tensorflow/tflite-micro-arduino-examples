@@ -21,10 +21,10 @@ limitations under the License.
 #include <string.h>
 #endif  // ARDUINO
 
-int TfLiteIntArrayGetSizeInBytes(int size) {
+size_t TfLiteIntArrayGetSizeInBytes(int size) {
   static TfLiteIntArray dummy;
 
-  int computed_size = sizeof(dummy) + sizeof(dummy.data[0]) * size;
+  size_t computed_size = sizeof(dummy) + sizeof(dummy.data[0]) * size;
 #if defined(_MSC_VER)
   // Context for why this is needed is in http://b/189926408#comment21
   computed_size -= sizeof(dummy.data[0]);
@@ -51,7 +51,7 @@ int TfLiteIntArrayEqualsArray(const TfLiteIntArray* a, int b_size,
 #ifndef ARDUINO
 
 TfLiteIntArray* TfLiteIntArrayCreate(int size) {
-  int alloc_size = TfLiteIntArrayGetSizeInBytes(size);
+  size_t alloc_size = TfLiteIntArrayGetSizeInBytes(size);
   if (alloc_size <= 0) return NULL;
   TfLiteIntArray* ret = (TfLiteIntArray*)malloc(alloc_size);
   if (!ret) return ret;
@@ -188,6 +188,26 @@ void TfLiteTensorReset(TfLiteType type, const char* name, TfLiteIntArray* dims,
   tensor->quantization.params = NULL;
 }
 
+TfLiteStatus TfLiteTensorCopy(const TfLiteTensor* src, TfLiteTensor* dst) {
+  if (!src || !dst)
+    return kTfLiteOk;
+  if (src->bytes != dst->bytes)
+    return kTfLiteError;
+  if (src == dst)
+    return kTfLiteOk;
+
+  dst->type = src->type;
+  if (dst->dims)
+    TfLiteIntArrayFree(dst->dims);
+  dst->dims = TfLiteIntArrayCopy(src->dims);
+  memcpy(dst->data.raw, src->data.raw, src->bytes);
+  dst->buffer_handle = src->buffer_handle;
+  dst->data_is_stale = src->data_is_stale;
+  dst->delegate = src->delegate;
+
+  return kTfLiteOk;
+}
+
 void TfLiteTensorRealloc(size_t num_bytes, TfLiteTensor* tensor) {
   if (tensor->allocation_type != kTfLiteDynamic &&
       tensor->allocation_type != kTfLitePersistentRo) {
@@ -209,6 +229,8 @@ const char* TfLiteTypeGetName(TfLiteType type) {
       return "NOTYPE";
     case kTfLiteFloat32:
       return "FLOAT32";
+    case kTfLiteUInt16:
+      return "UINT16";
     case kTfLiteInt16:
       return "INT16";
     case kTfLiteInt32:

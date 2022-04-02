@@ -120,8 +120,7 @@ class MicroMutableOpResolver : public MicroOpResolver {
   }
 
   TfLiteStatus AddAdd() {
-    return AddBuiltin(BuiltinOperator_ADD, tflite::ops::micro::Register_ADD(),
-                      ParseAdd);
+    return AddBuiltin(BuiltinOperator_ADD, tflite::Register_ADD(), ParseAdd);
   }
 
   TfLiteStatus AddAddN() {
@@ -204,8 +203,7 @@ class MicroMutableOpResolver : public MicroOpResolver {
   }
 
   TfLiteStatus AddDequantize() {
-    return AddBuiltin(BuiltinOperator_DEQUANTIZE,
-                      tflite::ops::micro::Register_DEQUANTIZE(),
+    return AddBuiltin(BuiltinOperator_DEQUANTIZE, tflite::Register_DEQUANTIZE(),
                       ParseDequantize);
   }
 
@@ -358,6 +356,11 @@ class MicroMutableOpResolver : public MicroOpResolver {
                       tflite::Register_MAX_POOL_2D(), ParsePool);
   }
 
+  TfLiteStatus AddMirrorPad() {
+    return AddBuiltin(BuiltinOperator_MIRROR_PAD, tflite::Register_MIRROR_PAD(),
+                      ParseMirrorPad);
+  }
+
   TfLiteStatus AddMean() {
     return AddBuiltin(BuiltinOperator_MEAN, tflite::ops::micro::Register_MEAN(),
                       ParseReducer);
@@ -369,8 +372,7 @@ class MicroMutableOpResolver : public MicroOpResolver {
   }
 
   TfLiteStatus AddMul() {
-    return AddBuiltin(BuiltinOperator_MUL, tflite::ops::micro::Register_MUL(),
-                      ParseMul);
+    return AddBuiltin(BuiltinOperator_MUL, tflite::Register_MUL(), ParseMul);
   }
 
   TfLiteStatus AddNeg() {
@@ -399,8 +401,8 @@ class MicroMutableOpResolver : public MicroOpResolver {
   }
 
   TfLiteStatus AddPrelu() {
-    return AddBuiltin(BuiltinOperator_PRELU,
-                      tflite::ops::micro::Register_PRELU(), ParsePrelu);
+    return AddBuiltin(BuiltinOperator_PRELU, tflite::Register_PRELU(),
+                      ParsePrelu);
   }
 
   TfLiteStatus AddQuantize() {
@@ -462,6 +464,10 @@ class MicroMutableOpResolver : public MicroOpResolver {
                       ParseSin);
   }
 
+  TfLiteStatus AddSlice() {
+    return AddBuiltin(BuiltinOperator_SLICE, Register_SLICE(), ParseSlice);
+  }
+
   TfLiteStatus AddSoftmax(
       const TfLiteRegistration& registration = Register_SOFTMAX()) {
     return AddBuiltin(BuiltinOperator_SOFTMAX, registration, ParseSoftmax);
@@ -509,8 +515,7 @@ class MicroMutableOpResolver : public MicroOpResolver {
   }
 
   TfLiteStatus AddSub() {
-    return AddBuiltin(BuiltinOperator_SUB, tflite::ops::micro::Register_SUB(),
-                      ParseSub);
+    return AddBuiltin(BuiltinOperator_SUB, tflite::Register_SUB(), ParseSub);
   }
 
   TfLiteStatus AddSvdf(

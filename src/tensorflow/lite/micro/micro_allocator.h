@@ -134,6 +134,9 @@ class MicroAllocator {
                                 MicroMemoryPlanner* memory_planner,
                                 ErrorReporter* error_reporter);
 
+  // Returns the fixed amount of memory overhead of MicroAllocator.
+  static size_t GetDefaultTailUsage(bool is_memory_planner_given);
+
   // Allocates internal resources required for model inference for each subgraph
   // from the arena.
   //
@@ -182,10 +185,16 @@ class MicroAllocator {
       const Model* model, const SubgraphAllocations* subgraph_allocations,
       int tensor_index, int subgraph_index);
 
+  virtual void DeallocateTempTfLiteTensor(TfLiteTensor*);
+
   // Resets all temporary allocations. This method should be called after a
   // chain of temp allocations (e.g. chain of TfLiteTensor objects via
   // AllocateTfLiteTensor()).
   virtual void ResetTempAllocations();
+
+  // Returns true if all temporary buffers including temp TfLiteTensor are
+  // already deallocated.
+  virtual bool IsAllTempDeallocated();
 
   // Allocates persistent buffer which has the same life time as the allocator.
   // The memory is immediately available and is allocated from the tail of the
@@ -208,12 +217,6 @@ class MicroAllocator {
   // Returns the arena usage in bytes, only available after
   // `FinishModelAllocation`. Otherwise, it will return 0.
   size_t used_bytes() const;
-
-  // Converts a flatbuffer int32_t array to a TfLiteIntArray, accounting for
-  // endiannes.
-  TfLiteStatus FlatBufferVectorToTfLiteTypeArray(
-      const flatbuffers::Vector<int32_t>* flatbuffer_array,
-      TfLiteIntArray** result);
 
   BuiltinDataAllocator* GetBuiltinDataAllocator();
 

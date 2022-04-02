@@ -18,9 +18,9 @@ limitations under the License.
 #include <cmath>
 #include <cstring>
 
+#include "micro_features_micro_model_settings.h"
 #include "tensorflow/lite/experimental/microfrontend/lib/frontend.h"
 #include "tensorflow/lite/experimental/microfrontend/lib/frontend_util.h"
-#include "micro_features_micro_model_settings.h"
 
 // Configure FFT to output 16 bit fixed point.
 #define FIXED_POINT 16
@@ -76,7 +76,7 @@ TfLiteStatus GenerateMicroFeatures(tflite::ErrorReporter* error_reporter,
     frontend_input = input;
     g_is_first_time = false;
   } else {
-    frontend_input = input + 160;
+    frontend_input = input;
   }
   FrontendOutput frontend_output = FrontendProcessSamples(
       &g_micro_features_state, frontend_input, input_size, num_samples_read);

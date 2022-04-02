@@ -1,0 +1,18 @@
+{
+    "data type": "audio-pcm-16khz-mono-s16",
+    "delay after": 4.0,
+    "test data": [
+        {
+            "file name": "examples/micro_speech/data/no_1000ms.wav",
+            "label": "no",
+            "regex": "Heard (.+) \\(\\d+\\) @\\d+ms",
+            "expr": "groups[1] == label"
+        },
+        {
+            "file name": "examples/micro_speech/data/yes_1000ms.wav",
+            "label": "yes",
+            "regex": "Heard (.+) \\(\\d+\\) @\\d+ms",
+            "expr": "groups[1] == label"
+        }
+    ]
+}

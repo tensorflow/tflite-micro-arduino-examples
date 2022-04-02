@@ -15,11 +15,10 @@ limitations under the License.
 
 #include <TensorFlowLite.h>
 
-#include "main_functions.h"
-
 #include "audio_provider.h"
 #include "command_responder.h"
 #include "feature_provider.h"
+#include "main_functions.h"
 #include "micro_features_micro_model_settings.h"
 #include "micro_features_model.h"
 #include "recognize_commands.h"
@@ -28,6 +27,8 @@ limitations under the License.
 #include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
 #include "tensorflow/lite/micro/system_setup.h"
 #include "tensorflow/lite/schema/schema_generated.h"
+
+#undef PROFILE_MICRO_SPEECH
 
 // Globals, used for compatibility with Arduino-style sketches.
 namespace {
@@ -126,10 +127,27 @@ void setup() {
   recognizer = &static_recognizer;
 
   previous_time = 0;
+
+  // start the audio
+  TfLiteStatus init_status = InitAudioRecording(error_reporter);
+  if (init_status != kTfLiteOk) {
+    TF_LITE_REPORT_ERROR(error_reporter, "Unable to initialize audio");
+    return;
+  }
+
+  TF_LITE_REPORT_ERROR(error_reporter, "Initialization complete");
 }
 
 // The name of this function is important for Arduino compatibility.
 void loop() {
+#ifdef PROFILE_MICRO_SPEECH
+  const uint32_t prof_start = millis();
+  static uint32_t prof_count = 0;
+  static uint32_t prof_sum = 0;
+  static uint32_t prof_min = std::numeric_limits<uint32_t>::max();
+  static uint32_t prof_max = 0;
+#endif  // PROFILE_MICRO_SPEECH
+
   // Fetch the spectrogram for the current time.
   const int32_t current_time = LatestAudioTimestamp();
   int how_many_new_slices = 0;
@@ -139,7 +157,7 @@ void loop() {
     TF_LITE_REPORT_ERROR(error_reporter, "Feature generation failed");
     return;
   }
-  previous_time = current_time;
+  previous_time += how_many_new_slices * kFeatureSliceStrideMs;
   // If no new audio samples have been received since last time, don't bother
   // running the network model.
   if (how_many_new_slices == 0) {
@@ -176,4 +194,23 @@ void loop() {
   // own function for a real application.
   RespondToCommand(error_reporter, current_time, found_command, score,
                    is_new_command);
+
+#ifdef PROFILE_MICRO_SPEECH
+  const uint32_t prof_end = millis();
+  if (++prof_count > 10) {
+    uint32_t elapsed = prof_end - prof_start;
+    prof_sum += elapsed;
+    if (elapsed < prof_min) {
+      prof_min = elapsed;
+    }
+    if (elapsed > prof_max) {
+      prof_max = elapsed;
+    }
+    if (prof_count % 300 == 0) {
+      TF_LITE_REPORT_ERROR(error_reporter,
+                           "## time: min %dms  max %dms  avg %dms", prof_min,
+                           prof_max, prof_sum / prof_count);
+    }
+  }
+#endif  // PROFILE_MICRO_SPEECH
 }

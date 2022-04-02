@@ -434,15 +434,21 @@ TfLiteStatus GetOutputShapeFromInput(TfLiteContext* context,
 // that build. What appears to be happening is that while the linker drops the
 // unsused function, the string library that gets pulled in is not dropped,
 // resulting in the increased binary size.
-std::string GetShapeDebugString(const TfLiteIntArray* shape) {
+const std::string GetShapeDebugString(const TfLiteIntArray* shape) {
   std::string str;
   for (int d = 0; d < shape->size; ++d) {
     if (str.empty())
       str = "[" + std::to_string(shape->data[d]);
     else
-      str += ", " + std::to_string(shape->data[d]);
+      // Don't add space after "," to make the output consistent with
+      // tensorflow::shape_inference::InferenceContext::DebugString()
+      str += "," + std::to_string(shape->data[d]);
   }
-  str += "]";
+  if (str.empty()) {
+    str = "[]";
+  } else {
+    str += "]";
+  }
   return str;
 }
 
@@ -523,6 +529,9 @@ int TfLiteTypeGetSize(TfLiteType type) {
       return 1;
     case kTfLiteBool:
       return sizeof(bool);
+    case kTfLiteUInt16:
+      static_assert(sizeof(uint16_t) == 2, "");
+      return 2;
     case kTfLiteInt16:
       static_assert(sizeof(int16_t) == 2, "");
       return 2;

@@ -15,10 +15,9 @@ limitations under the License.
 
 #include <TensorFlowLite.h>
 
-#include "main_functions.h"
-
 #include "detection_responder.h"
 #include "image_provider.h"
+#include "main_functions.h"
 #include "model_settings.h"
 #include "person_detect_model_data.h"
 #include "tensorflow/lite/micro/micro_error_reporter.h"
@@ -97,13 +96,21 @@ void setup() {
 
   // Get information about the memory area to use for the model's input.
   input = interpreter->input(0);
+
+  if ((input->dims->size != 4) || (input->dims->data[0] != 1) ||
+      (input->dims->data[1] != kNumRows) ||
+      (input->dims->data[2] != kNumCols) ||
+      (input->dims->data[3] != kNumChannels) || (input->type != kTfLiteInt8)) {
+    TF_LITE_REPORT_ERROR(error_reporter,
+                         "Bad input tensor parameters in model");
+    return;
+  }
 }
 
 // The name of this function is important for Arduino compatibility.
 void loop() {
   // Get image from provider.
-  if (kTfLiteOk != GetImage(error_reporter, kNumCols, kNumRows, kNumChannels,
-                            input->data.int8)) {
+  if (kTfLiteOk != GetImage(error_reporter, input)) {
     TF_LITE_REPORT_ERROR(error_reporter, "Image capture failed.");
   }
 
@@ -117,5 +124,9 @@ void loop() {
   // Process the inference results.
   int8_t person_score = output->data.uint8[kPersonIndex];
   int8_t no_person_score = output->data.uint8[kNotAPersonIndex];
-  RespondToDetection(error_reporter, person_score, no_person_score);
+  float person_score_f =
+      (person_score - output->params.zero_point) * output->params.scale;
+  float no_person_score_f =
+      (no_person_score - output->params.zero_point) * output->params.scale;
+  RespondToDetection(error_reporter, person_score_f, no_person_score_f);
 }

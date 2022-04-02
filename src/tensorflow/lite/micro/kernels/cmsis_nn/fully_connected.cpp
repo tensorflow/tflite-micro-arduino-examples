@@ -1,4 +1,4 @@
-/* Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2021 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -54,15 +54,17 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
   const auto params =
       static_cast<const TfLiteFullyConnectedParams*>(node->builtin_data);
 
-  const TfLiteTensor* input =
-      GetInput(context, node, kFullyConnectedInputTensor);
+  MicroContext* micro_context = GetMicroContext(context);
+  TfLiteTensor* input =
+      micro_context->AllocateTempInputTensor(node, kFullyConnectedInputTensor);
   TF_LITE_ENSURE(context, input != nullptr);
-  const TfLiteTensor* filter =
-      GetInput(context, node, kFullyConnectedWeightsTensor);
+  TfLiteTensor* filter = micro_context->AllocateTempInputTensor(
+      node, kFullyConnectedWeightsTensor);
   TF_LITE_ENSURE(context, filter != nullptr);
-  const TfLiteTensor* bias =
-      GetOptionalInputTensor(context, node, kFullyConnectedBiasTensor);
-  TfLiteTensor* output = GetOutput(context, node, kFullyConnectedOutputTensor);
+  TfLiteTensor* bias =
+      micro_context->AllocateTempInputTensor(node, kFullyConnectedBiasTensor);
+  TfLiteTensor* output = micro_context->AllocateTempOutputTensor(
+      node, kFullyConnectedOutputTensor);
   TF_LITE_ENSURE(context, output != nullptr);
 
   TF_LITE_ENSURE_TYPES_EQ(context, input->type, output->type);
@@ -97,6 +99,14 @@ TfLiteStatus Prepare(TfLiteContext* context, TfLiteNode* node) {
       data->buffer_idx = -1;
     }
   }
+
+  micro_context->DeallocateTempTfLiteTensor(output);
+  micro_context->DeallocateTempTfLiteTensor(input);
+  micro_context->DeallocateTempTfLiteTensor(filter);
+  if (bias != nullptr) {
+    micro_context->DeallocateTempTfLiteTensor(bias);
+  }
+
   return kTfLiteOk;
 }
 
@@ -158,14 +168,16 @@ TfLiteStatus EvalQuantizedInt8(TfLiteContext* context, TfLiteNode* node,
     ctx.buf = context->GetScratchBuffer(context, data.buffer_idx);
   }
 
+  const int32_t* bias_data =
+      nullptr != bias ? tflite::micro::GetTensorData<int32_t>(bias) : nullptr;
+
   TF_LITE_ENSURE_EQ(
       context,
       arm_fully_connected_s8(
           &ctx, &fc_params, &quant_params, &input_dims,
           tflite::micro::GetTensorData<int8_t>(input), &filter_dims,
-          tflite::micro::GetTensorData<int8_t>(filter), &bias_dims,
-          tflite::micro::GetTensorData<int32_t>(bias), &output_dims,
-          tflite::micro::GetTensorData<int8_t>(output)),
+          tflite::micro::GetTensorData<int8_t>(filter), &bias_dims, bias_data,
+          &output_dims, tflite::micro::GetTensorData<int8_t>(output)),
       ARM_MATH_SUCCESS);
 
   return kTfLiteOk;
@@ -191,14 +203,16 @@ TfLiteStatus Eval(TfLiteContext* context, TfLiteNode* node) {
   // Checks in Prepare ensure input, output and filter types are all the same.
   switch (input->type) {
     case kTfLiteFloat32: {
+      const float* bias_data =
+          nullptr != bias ? tflite::micro::GetTensorData<float>(bias) : nullptr;
+
       tflite::reference_ops::FullyConnected(
           FullyConnectedParamsFloat(params->activation),
           tflite::micro::GetTensorShape(input),
           tflite::micro::GetTensorData<float>(input),
           tflite::micro::GetTensorShape(filter),
           tflite::micro::GetTensorData<float>(filter),
-          tflite::micro::GetTensorShape(bias),
-          tflite::micro::GetTensorData<float>(bias),
+          tflite::micro::GetTensorShape(bias), bias_data,
           tflite::micro::GetTensorShape(output),
           tflite::micro::GetTensorData<float>(output));
       break;

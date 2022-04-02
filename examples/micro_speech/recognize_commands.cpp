@@ -17,6 +17,8 @@ limitations under the License.
 
 #include <limits>
 
+#undef DEBUG_MICRO_SPEECH
+
 RecognizeCommands::RecognizeCommands(tflite::ErrorReporter* error_reporter,
                                      int32_t average_window_duration_ms,
                                      uint8_t detection_threshold,
@@ -28,7 +30,7 @@ RecognizeCommands::RecognizeCommands(tflite::ErrorReporter* error_reporter,
       suppression_ms_(suppression_ms),
       minimum_count_(minimum_count),
       previous_results_(error_reporter) {
-  previous_top_label_ = "silence";
+  previous_top_label_ = kCategoryLabels[0];  // silence
   previous_top_label_time_ = std::numeric_limits<int32_t>::min();
 }
 
@@ -65,15 +67,15 @@ TfLiteStatus RecognizeCommands::ProcessLatestResults(
     return kTfLiteError;
   }
 
-  // Add the latest results to the head of the queue.
-  previous_results_.push_back({current_time_ms, latest_results->data.int8});
-
   // Prune any earlier results that are too old for the averaging window.
   const int64_t time_limit = current_time_ms - average_window_duration_ms_;
   while ((!previous_results_.empty()) &&
          previous_results_.front().time_ < time_limit) {
     previous_results_.pop_front();
   }
+
+  // Add the latest results to the head of the queue.
+  previous_results_.push_back({current_time_ms, latest_results->data.int8});
 
   // If there are too few results, assume the result will be unreliable and
   // bail.
@@ -129,10 +131,25 @@ TfLiteStatus RecognizeCommands::ProcessLatestResults(
   if ((current_top_score > detection_threshold_) &&
       ((current_top_label != previous_top_label_) ||
        (time_since_last_top > suppression_ms_))) {
+#ifdef DEBUG_MICRO_SPEECH
+    TF_LITE_REPORT_ERROR(
+        error_reporter_, "Scores: s %d u %d y %d n %d  %s -> %s",
+        average_scores[0], average_scores[1], average_scores[2],
+        average_scores[3], previous_top_label_, current_top_label);
+#endif  // DEBUG_MICRO_SPEECH
     previous_top_label_ = current_top_label;
     previous_top_label_time_ = current_time_ms;
     *is_new_command = true;
   } else {
+#ifdef DEBUG_MICRO_SPEECH
+    if (current_top_label != previous_top_label_) {
+      TF_LITE_REPORT_ERROR(
+          error_reporter_, "#Scores: s %d u %d y %d n %d  %s -> %s",
+          average_scores[0], average_scores[1], average_scores[2],
+          average_scores[3], previous_top_label_, current_top_label);
+      previous_top_label_ = current_top_label;
+    }
+#endif  // DEBUG_MICRO_SPEECH
     *is_new_command = false;
   }
   *found_command = current_top_label;
