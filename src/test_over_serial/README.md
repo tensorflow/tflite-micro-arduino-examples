@@ -114,28 +114,41 @@ sudo apt-get purge modemmanager
 
 ### Example test configuration data
 
-The test script relies on configuration data in a JSON compatible form. An example configuration:
+The test script relies on configuration data in a JSON compatible form. The default configuration file name  is `serial_test_config.json` and must be located within the `data` sub-directory of the example source code. An example configuration:
 ```
 {
-    "person_detection":
-    {
-        "data type":
-            "image-grayscale",
-        "delay after":
-            4.0,
-        "test data":
-        [
-            {
-                "file name": "examples/person_detection/data/person.bmp",
-                "label": "person",
-                "regex": r"Person score: (\d+\.\d+)% "
-                            r"No person score: (\d+\.\d+)%",
-                "expr": "groups[1] > groups[2]",
-                "qqvga size": False,
-            },
-
-        ]
-    }
+    "data type": "image-grayscale",
+    "delay after": 4.0,
+    "test data": [
+        {
+            "file name": "examples/person_detection/data/person.bmp",
+            "label": "person",
+            "regex": "Person score: (\\d+\\.\\d+)% No person score: (\\d+\\.\\d+)%",
+            "expr": "groups[1] > groups[2]",
+            "qqvga size": false
+        },
+        {
+            "file name": "examples/person_detection/data/no_person.bmp",
+            "label": "no person",
+            "regex": "Person score: (\\d+\\.\\d+)% No person score: (\\d+\\.\\d+)%",
+            "expr": "groups[1] < groups[2]",
+            "qqvga size": false
+        },
+        {
+            "file name": "examples/person_detection/data/person.bmp",
+            "label": "person",
+            "regex": "Person score: (\\d+\\.\\d+)% No person score: (\\d+\\.\\d+)%",
+            "expr": "groups[1] > groups[2]",
+            "qqvga size": true
+        },
+        {
+            "file name": "examples/person_detection/data/no_person.bmp",
+            "label": "no person",
+            "regex": "Person score: (\\d+\\.\\d+)% No person score: (\\d+\\.\\d+)%",
+            "expr": "groups[1] < groups[2]",
+            "qqvga size": true
+        }
+    ]
 }
 ```
 
