@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2010-2021 Arm Limited or its affiliates.
+ * Copyright (C) 2010-2022 Arm Limited or its affiliates.
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -21,8 +21,9 @@
  * Title:        arm_nnsupportfunctions.h
  * Description:  Public header file of support functions for CMSIS NN Library
  *
- * $Date:        12. Nov 2021
- * $Revision:    V.6.0.0
+
+ * $Date:        16. March 2022
+ * $Revision:    V.6.2.1
  *
  * Target Processor:  Cortex-M CPUs
  * -------------------------------------------------------------------- */
@@ -32,6 +33,8 @@
 
 #include "third_party/cmsis/CMSIS/NN/Include/arm_nn_math_types.h"
 #include "third_party/cmsis/CMSIS/NN/Include/arm_nn_types.h"
+
+#include <stdbool.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -548,6 +551,29 @@ q7_t *arm_nn_depthwise_conv_nt_t_s8(const q7_t *lhs,
                                     q7_t *out);
 
 /**
+ *@brief Matrix-multiplication function for convolution with reordered columns
+ *@param[in]       pA          pointer to operand A
+ *@param[in]       pInBuffer   pointer to operand B, always conssists of 2 vectors
+ *@param[in]       ch_im_out   numRow of A
+ *@param[in]       numCol_A    numCol of A
+ *@param[in]       bias_shift  amount of left-shift for bias
+ *@param[in]       out_shift   amount of right-shift for output
+ *@param[in]       bias        the bias
+ *@param[in,out]   pOut        pointer to output
+ *@return     The function returns the incremented output pointer
+ *
+ *@details  This function assumes that data in pInBuffer are reordered
+ */
+q7_t *arm_nn_mat_mult_kernel_q7_q15_reordered(const q7_t *pA,
+                                              const q15_t *pInBuffer,
+                                              const uint16_t ch_im_out,
+                                              const uint16_t numCol_A,
+                                              const uint16_t bias_shift,
+                                              const uint16_t out_shift,
+                                              const q7_t *bias,
+                                              q7_t *pOut);
+
+/**
   @brief         Read 2 q15 elements and post increment pointer.
   @param[in]     in_q15   Pointer to pointer that holds address of input.
   @return        q31 value
@@ -606,7 +632,6 @@ __STATIC_FORCEINLINE q31_t arm_nn_read_q7x4(const q7_t *in_q7)
   @brief         Write four q7 to q7 pointer and increment pointer afterwards.
   @param[in]     in       Double pointer to input value
   @param[in]     value    Four bytes to copy
-  @return        none
  */
 __STATIC_FORCEINLINE void arm_nn_write_q7x4_ia(q7_t **in, q31_t value)
 {
@@ -744,6 +769,64 @@ void arm_nn_mult_q15(q15_t *pSrcA, q15_t *pSrcB, q15_t *pDst, const uint16_t out
 void arm_nn_mult_q7(q7_t *pSrcA, q7_t *pSrcB, q7_t *pDst, const uint16_t out_shift, uint32_t blockSize);
 
 /**
+ * @brief Matrix-multiplication function for convolution with per-channel requantization.
+ * @param[in]       input_a     pointer to operand A
+ * @param[in]       input_b     pointer to operand B, always consists of 2 vectors.
+ * @param[in]       output_ch   number of rows of A
+ * @param[in]       out_shift  pointer to per output channel requantization shift parameter.
+ * @param[in]       out_mult   pointer to per output channel requantization multiplier parameter.
+ * @param[in]       out_offset      output tensor offset.
+ * @param[in]       activation_min   minimum value to clamp the output to. Range : int8
+ * @param[in]       activation_max   maximum value to clamp the output to. Range : int8
+ * @param[in]       num_col_a   number of columns of A
+ * @param[in]       output_bias per output channel bias. Range : int32
+ * @param[in,out]   out_0       pointer to output
+ * @return     The function returns one of the two
+ *              1. The incremented output pointer for a successful operation or
+ *              2. NULL if implementation is not available.
+ *
+ * @details   This function does the matrix multiplication of weight matrix for all output channels
+ *            with 2 columns from im2col and produces two elements/output_channel. The outputs are
+ *            clamped in the range provided by activation min and max.
+ *            Supported framework: TensorFlow Lite micro.
+ */
+q7_t *arm_nn_mat_mult_kernel_s8_s16(const q7_t *input_a,
+                                    const q15_t *input_b,
+                                    const uint16_t output_ch,
+                                    const int32_t *out_shift,
+                                    const int32_t *out_mult,
+                                    const int32_t out_offset,
+                                    const int16_t activation_min,
+                                    const int16_t activation_max,
+                                    const uint16_t num_col_a,
+                                    const int32_t *const output_bias,
+                                    q7_t *out_0);
+
+/**
+ * @brief Common softmax function for s8 input and s8 or s16 output
+ * @param[in]  input          Pointer to the input tensor
+ * @param[in]  num_rows       Number of rows in the input tensor
+ * @param[in]  row_size       Number of elements in each input row
+ * @param[in]  mult           Input quantization multiplier
+ * @param[in]  shift          Input quantization shift within the range [0, 31]
+ * @param[in]  diff_min       Minimum difference with max in row. Used to check if
+ *                            the quantized exponential operation can be performed
+ * @param[in]  int16_output   Indicating s8 output if 0 else s16 output
+ * @param[out] output         Pointer to the output tensor
+ *
+ * @note Supported framework: TensorFlow Lite micro (bit-accurate)
+ *
+ */
+void arm_nn_softmax_common_s8(const int8_t *input,
+                              const int32_t num_rows,
+                              const int32_t row_size,
+                              const int32_t mult,
+                              const int32_t shift,
+                              const int32_t diff_min,
+                              const bool int16_output,
+                              void *output);
+
+/**
  * @brief macro for adding rounding offset
  */
 #ifndef ARM_NN_TRUNCATE
@@ -870,27 +953,36 @@ __STATIC_FORCEINLINE q31_t arm_nn_divide_by_power_of_two(const q31_t dividend, c
  */
 __STATIC_FORCEINLINE q31_t arm_nn_requantize(const q31_t val, const q31_t multiplier, const q31_t shift)
 {
+#ifdef CMSIS_NN_USE_SINGLE_ROUNDING
+    const int64_t total_shift = 31 - shift;
+    const int64_t new_val = val * (int64_t)multiplier;
+
+    int32_t result = new_val >> (total_shift - 1);
+    result = (result + 1) >> 1;
+
+    return result;
+#else
     return arm_nn_divide_by_power_of_two(arm_nn_doubling_high_mult_no_sat(val * (1 << LEFT_SHIFT(shift)), multiplier),
                                          RIGHT_SHIFT(shift));
+#endif
 }
 
 /**
  * @brief           Requantize a given 64 bit value.
- * @param[in]       val                 Value to be requantized
- * @param[in]       reduced_multiplier  Reduced multiplier from range {NN_Q31_MIN + 1, Q32_MAX} to {Q16_MIN + 1,
+ * @param[in]       val                 Value to be requantized in the range {-(1<<47)} to {(1<<47) - 1}
+ * @param[in]       reduced_multiplier  Reduced multiplier in the range {NN_Q31_MIN + 1, Q32_MAX} to {Q16_MIN + 1,
  * Q16_MAX}
- * @param[in]       shift               left or right shift for 'val * multiplier'
+ * @param[in]       shift               Left or right shift for 'val * multiplier' in the range {-31} to {7}
  *
  * @return          Returns (val * multiplier)/(2 ^ shift)
  *
  */
 __STATIC_FORCEINLINE q31_t arm_nn_requantize_s64(const q63_t val, const q31_t reduced_multiplier, const q31_t shift)
 {
-    q31_t result = 0;
-    q63_t new_val = val * reduced_multiplier;
+    const q63_t new_val = val * reduced_multiplier;
 
-    result = new_val >> (14 - shift); // 64->32 bit reduction
-    result = (result + 1) >> 1;       // Last shift position and insert round
+    q31_t result = new_val >> (14 - shift); // 64->32 bit reduction
+    result = (result + 1) >> 1;             // Last shift position and insert round
 
     return result;
 }
@@ -959,8 +1051,21 @@ __STATIC_FORCEINLINE int32x4_t arm_divide_by_power_of_two_mve(const int32x4_t di
  */
 __STATIC_FORCEINLINE int32x4_t arm_requantize_mve(const int32x4_t val, const q31_t multiplier, const q31_t shift)
 {
+#ifdef CMSIS_NN_USE_SINGLE_ROUNDING
+    const int right_shift = MIN(-1, shift);
+    const int left_shift = shift - right_shift;
+
+    const int32x4_t left_shift_dup = vdupq_n_s32(left_shift);
+    const int32x4_t right_shift_dup = vdupq_n_s32(right_shift);
+
+    int32x4_t result = vqdmulhq_n_s32(vshlq_s32(val, left_shift_dup), multiplier);
+    result = vrshlq_s32(result, right_shift_dup);
+
+    return result;
+#else
     return arm_divide_by_power_of_two_mve(
         arm_doubling_high_mult_mve(vshlq_s32(val, vdupq_n_s32(LEFT_SHIFT(shift))), multiplier), RIGHT_SHIFT(shift));
+#endif
 }
 
 __STATIC_FORCEINLINE int32x4_t arm_doubling_high_mult_mve_32x4(const int32x4_t m1, const int32x4_t m2)
@@ -980,6 +1085,15 @@ __STATIC_FORCEINLINE int32x4_t arm_requantize_mve_32x4(const int32x4_t val,
                                                        const int32x4_t multiplier,
                                                        const int32x4_t shift)
 {
+#ifdef CMSIS_NN_USE_SINGLE_ROUNDING
+    const int32x4_t right_shift = vminq_s32(vdupq_n_s32(-1), shift);
+    const int32x4_t left_shift = vqsubq_s32(shift, right_shift);
+
+    int32x4_t result = vqdmulhq_s32(vshlq_s32(val, left_shift), multiplier);
+    result = vrshlq_s32(result, right_shift);
+
+    return result;
+#else
     const int32x4_t zz = vdupq_n_s32(0);
     const mve_pred16_t p = vcmpgtq_n_s32(shift, 0);
 
@@ -988,6 +1102,7 @@ __STATIC_FORCEINLINE int32x4_t arm_requantize_mve_32x4(const int32x4_t val,
 
     return arm_divide_by_power_of_two_mve_32x4(arm_doubling_high_mult_mve_32x4(vshlq_s32(val, left_shift), multiplier),
                                                right_shift);
+#endif
 }
 #endif
 
@@ -1053,7 +1168,6 @@ __STATIC_FORCEINLINE int32_t arm_nn_one_over_one_plus_x_for_x_in_0_1(int32_t val
   @brief         Write 2 q15 elements and post increment pointer.
   @param[in]     dest_q15  Pointer to pointer that holds address of destination.
   @param[in]     src_q31   Input value to be written.
-  @return        none
  */
 __STATIC_FORCEINLINE void arm_nn_write_q15x2_ia(q15_t **dest_q15, q31_t src_q31)
 {
