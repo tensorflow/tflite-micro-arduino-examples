@@ -15,7 +15,6 @@ limitations under the License.
 #include "tensorflow/lite/kernels/internal/reference/pooling.h"
 
 #include "third_party/cmsis/CMSIS/NN/Include/arm_nnfunctions.h"
-//#include "third_party/flatbuffers/include/flatbuffers/base.h"
 #include "tensorflow/lite/c/builtin_op_data.h"
 #include "tensorflow/lite/c/common.h"
 #include "tensorflow/lite/kernels/internal/tensor_ctypes.h"
