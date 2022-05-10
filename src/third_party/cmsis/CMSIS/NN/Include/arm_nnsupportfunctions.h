@@ -21,9 +21,8 @@
  * Title:        arm_nnsupportfunctions.h
  * Description:  Public header file of support functions for CMSIS NN Library
  *
-
- * $Date:        16. March 2022
- * $Revision:    V.6.2.1
+ * $Date:        19. April 2022
+ * $Revision:    V.7.0.1
  *
  * Target Processor:  Cortex-M CPUs
  * -------------------------------------------------------------------- */
@@ -388,6 +387,8 @@ arm_status arm_nn_mat_mult_nt_t_s8(const q7_t *lhs,
  * @param[in]      rhs_rows        Number of rows in the right-hand side input matrix
  * @param[in]      activation_min  Minimum value to clamp the output to. Range: int8
  * @param[in]      activation_max  Maximum value to clamp the output to. Range: int8
+ * @param[in]      address_offset  Memory position offset for dst. First output is stored at 'dst', the
+ *                                 second at 'dst + address_offset' and so on. Default value is typically 1.
  *
  * @return         The function returns <code>ARM_MATH_SUCCESS</code>
  *
@@ -404,7 +405,8 @@ arm_status arm_nn_vec_mat_mult_t_s8(const q7_t *lhs,
                                     const int32_t rhs_cols,
                                     const int32_t rhs_rows,
                                     const int32_t activation_min,
-                                    const int32_t activation_max);
+                                    const int32_t activation_max,
+                                    const int32_t address_offset);
 
 /**
  * @brief s16 Vector by Matrix (transposed) multiplication
@@ -652,7 +654,7 @@ __STATIC_FORCEINLINE void arm_memset_q7(q7_t *dst, const q7_t val, uint32_t bloc
     __asm volatile("   vdup.8                  q0, %[set_val]             \n"
                    "   wlstp.8                 lr, %[cnt], 1f             \n"
                    "2:                                                    \n"
-                   "   vstrb.8                 q0, [%[in]], 16            \n"
+                   "   vstrb.8                 q0, [%[in]], #16            \n"
                    "   letp                    lr, 2b                     \n"
                    "1:                                                    \n"
                    : [ in ] "+r"(dst)
@@ -999,8 +1001,8 @@ __STATIC_FORCEINLINE void arm_memcpy_q7(q7_t *__RESTRICT dst, const q7_t *__REST
 #if defined(ARM_MATH_MVEI)
     __asm volatile("   wlstp.8                 lr, %[cnt], 1f             \n"
                    "2:                                                    \n"
-                   "   vldrb.8                 q0, [%[in]], 16            \n"
-                   "   vstrb.8                 q0, [%[out]], 16           \n"
+                   "   vldrb.8                 q0, [%[in]], #16            \n"
+                   "   vstrb.8                 q0, [%[out]], #16           \n"
                    "   letp                    lr, 2b                     \n"
                    "1:                                                    \n"
                    : [ in ] "+r"(src), [ out ] "+r"(dst)
