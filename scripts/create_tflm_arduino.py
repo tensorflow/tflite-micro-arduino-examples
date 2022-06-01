@@ -355,13 +355,30 @@ class ArduinoProjectGenerator:
       args += f" < {str(src_path)} > {str(dst_path)}"
       _run_python_script(script_path, args=args, is_dry_run=self._is_dry_run)
 
+  def _glob_expand(self, relative_dir: Path, files: List[Path]) -> List[Path]:
+    result_list: List[Path] = []
+    for file in files:
+      expanded = list(relative_dir.glob(str(file)))
+      if not expanded:
+        print(f"*** Unknown path: {str(relative_dir / file)}")
+        continue
+      elif len(expanded) == 1:
+        if expanded[0].is_dir():
+          expanded = expanded[0].glob("**/*")
+
+      expanded = filter(lambda p: not p.is_dir(), expanded)
+      # future: use transform_suffixes=
+      result_list.extend(expanded)
+
+    return result_list
+
   def _patch_with_sed(self, patches: List[Tuple[List[Path],
                                                 List[str]]]) -> None:
     for files, scripts in patches:
-      for file in files:
-        _run_sed_scripts(self._output_dir / file,
-                         scripts=scripts,
-                         is_dry_run=self._is_dry_run)
+      glob_expanded_files = self._glob_expand(self._output_dir, files)
+      print(glob_expanded_files)
+      for file in glob_expanded_files:
+        _run_sed_scripts(file, scripts=scripts, is_dry_run=self._is_dry_run)
 
   def _fix_subdirectories(self) -> None:
     script_path = "scripts/fix_arduino_subfolders.py"
