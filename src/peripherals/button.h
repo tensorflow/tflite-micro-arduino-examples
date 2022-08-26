@@ -1,4 +1,4 @@
-/* Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2022 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -12,13 +12,26 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-#ifndef TENSORFLOW_LITE_MICRO_TOOLS_MAKE_TEMPLATES_TENSORFLOWLITE_H_
-#define TENSORFLOW_LITE_MICRO_TOOLS_MAKE_TEMPLATES_TENSORFLOWLITE_H_
 
-// This header is deliberately empty, and is only present because including it
-// in a .ino sketch forces the Arduino toolchain to build the rest of the
-// library.
+#ifndef PERIPHERALS_BUTTON_H_
+#define PERIPHERALS_BUTTON_H_
 
-#include "peripherals/peripherals.h"
+namespace peripherals {
 
-#endif  // TENSORFLOW_LITE_MICRO_TOOLS_MAKE_TEMPLATES_TENSORFLOWLITE_H_
+enum ButtonState { kUp = 1, KDown = 0 };
+enum ButtonPressState { kNone, kPressed, kLongPressDown, kLongPressUp };
+
+class Button {
+ public:
+  static Button& Instance();
+
+  virtual ButtonPressState GetPressState() = 0;
+  virtual ButtonState GetState() = 0;
+
+ protected:
+  Button() {}
+};
+
+}  // namespace peripherals
+
+#endif  // PERIPHERALS_BUTTON_H_

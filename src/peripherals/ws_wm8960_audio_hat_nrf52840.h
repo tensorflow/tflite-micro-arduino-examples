@@ -1,4 +1,4 @@
-/* Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2022 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -12,13 +12,24 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
-#ifndef TENSORFLOW_LITE_MICRO_TOOLS_MAKE_TEMPLATES_TENSORFLOWLITE_H_
-#define TENSORFLOW_LITE_MICRO_TOOLS_MAKE_TEMPLATES_TENSORFLOWLITE_H_
 
-// This header is deliberately empty, and is only present because including it
-// in a .ino sketch forces the Arduino toolchain to build the rest of the
-// library.
+#ifndef PERIPHERALS_WS_WM8960_AUDIO_HAT_NRF52840_H_
+#define PERIPHERALS_WS_WM8960_AUDIO_HAT_NRF52840_H_
 
-#include "peripherals/peripherals.h"
+#include "audio_device.h"
 
-#endif  // TENSORFLOW_LITE_MICRO_TOOLS_MAKE_TEMPLATES_TENSORFLOWLITE_H_
+namespace peripherals {
+
+// Composite audio device implementation for:
+// WaveShare WM8960 Audio Hat used with nrf52840 SOC
+class WS_WM8960_AudioHat_NRF52840 final : public AudioDevice {
+ public:
+  static AudioDevice& Instance();
+
+ private:
+  WS_WM8960_AudioHat_NRF52840();
+};
+
+}  // namespace peripherals
+
+#endif  // PERIPHERALS_WS_WM8960_AUDIO_HAT_NRF52840_H_
