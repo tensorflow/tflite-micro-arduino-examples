@@ -12,8 +12,12 @@ The model is trained to replicate a `sine` function and generates a pattern of
 data to blink the built-in LED in a fade in/out pattern.
 
 ## Table of contents
-
--   [Deploy to Arduino](#deploy-to-arduino)
+<!--ts-->
+* [Table of contents](#table-of-contents)
+* [Deploy to Arduino](#deploy-to-arduino)
+  * [Install the Arduino_TensorFlowLite library](#install-the-arduino_tensorflowlite-library)
+  * [Load and run the example](#load-and-run-the-example)
+<!--te-->
 
 ## Deploy to Arduino
 
@@ -35,14 +39,13 @@ blink instead of fading.
 
 ### Install the Arduino_TensorFlowLite library
 
-This example application is included as part of the official TensorFlow Lite
-Arduino library. To install it, open the Arduino library manager in
-`Tools -> Manage Libraries...` and search for `Arduino_TensorFlowLite`.
+To install the TensorFlow Lite Micro for Arduino library, see the
+[how to install](../../README.md#how-to-install) instructions.
 
 ### Load and run the example
 
 Once the library has been added, go to `File -> Examples`. You should see an
-example near the bottom of the list named `TensorFlowLite:hello_world`. Select
+entry within the list named `Arduino_TensorFlowLite`. Select
 it and click `hello_world` to load the example.
 
 Use the Arduino IDE to build and upload the example. Once it is running,

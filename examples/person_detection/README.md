@@ -26,14 +26,15 @@ set of LEDs, which are used to indicate whether a person has been recognized.
 
 ### Install the Arduino_TensorFlowLite library
 
-This example application is included as part of the official TensorFlow Lite
-Arduino library. To install it, open the Arduino library manager in
-`Tools -> Manage Libraries...` and search for `Arduino_TensorFlowLite`.
+This example application is included as part of the official TensorFlow Lite Micro
+Arduino library.
+To install the TensorFlow Lite Micro for Arduino library, see the
+[how to install](../../README.md#how-to-install) instructions.
 
 ### Load and run the example
 
 Once the library has been added, go to `File -> Examples`. You should see an
-example near the bottom of the list named `TensorFlowLite:person_detection`. Select
+entry within the list named `Arduino_TensorFlowLite`. Select
 it and click `person_detection` to load the example.
 
 Use the Arduino IDE to build and upload the example. Once it is running, you

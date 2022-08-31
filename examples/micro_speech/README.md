@@ -15,9 +15,12 @@ The code has a small footprint (for example, around 166 kilobytes on a Cortex
 M4) and only uses about 54 kilobytes of additional RAM for working memory.
 
 ## Table of contents
-
--   [Deploy to Arduino](#deploy-to-arduino)
-
+<!--ts-->
+* [Table of contents](#table-of-contents)
+* [Deploy to Arduino](#deploy-to-arduino)
+   * [Install the Arduino_TensorFlowLite library](#install-the-arduino_tensorflowlite-library)
+   * [Load and run the example](#load-and-run-the-example)
+<!--te-->
 
 ## Deploy to Arduino
 
@@ -35,14 +38,15 @@ set of LEDs, which are used to indicate that a word has been recognized.
 
 ### Install the Arduino_TensorFlowLite library
 
-This example application is included as part of the official TensorFlow Lite
-Arduino library. To install it, open the Arduino library manager in
-`Tools -> Manage Libraries...` and search for `Arduino_TensorFlowLite`.
+This example application is included as part of the official TensorFlow Lite Micro
+Arduino library.
+To install the TensorFlow Lite Micro for Arduino library, see the
+[how to install](../../README.md#how-to-install) instructions.
 
 ### Load and run the example
 
 Once the library has been added, go to `File -> Examples`. You should see an
-example near the bottom of the list named `TensorFlowLite:micro_speech`. Select
+entry within the list named `Arduino_TensorFlowLite`. Select
 it and click `micro_speech` to load the example.
 
 Use the Arduino IDE to build and upload the example. Once it is running, you
