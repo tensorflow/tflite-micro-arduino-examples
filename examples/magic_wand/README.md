@@ -4,18 +4,17 @@ Magic Wand example for [TensorFlow Lite Micro](https://www.tensorflow.org/lite/m
 
 ## Table of contents
 <!--ts-->
-   * [Introduction](#introduction)
-   * [Hardware Requirements](#hardware-requirements)
-   * [Installing the Sketch](#installing-the-sketch)
-      * [Arduino Desktop IDE](#arduino-desktop-ide)
-      * [Arduino Web Editor](#arduino-web-editor)
-   * [Building the Wand](#building-the-wand)
-   * [Using the wand](#using-the-wand)
-   * [Viewing Gestures in the Browser](#viewing-gestures-in-the-browser)
-   * [Pretrained Model](#pretrained-model)
-   * [Recording Gestures](#recording-gestures)
-   * [Training](#training)
-   * [Deployment](#deployment)
+* [Introduction](#introduction)
+* [Hardware Requirements](#hardware-requirements)
+* [Installing the Sketch](#installing-the-sketch)
+   * [Arduino Desktop IDE](#arduino-desktop-ide)
+* [Building the Wand](#building-the-wand)
+* [Using the wand](#using-the-wand)
+* [Viewing Gestures in the Browser](#viewing-gestures-in-the-browser)
+* [Pretrained Model](#pretrained-model)
+* [Recording Gestures](#recording-gestures)
+* [Training](#training)
+* [Deployment](#deployment)
 <!--te-->
 
 ## Introduction
@@ -37,19 +36,19 @@ This project shows you how to recognize gestures made by waving a magic wand, us
   
 ## Installing the Sketch
   
-You'll need to ensure you can successfully connect and load sketches onto your Arduino board, using either the desktop IDE or the online web editor. Once you've made sure you can load a simple sketch successfully, you'll follow these steps depending on whether you're in the [web](#arduino-web-editor) or [desktop](#arduino-desktop-ide) application:
+You'll need to ensure you can successfully connect and load sketches onto your Arduino board,
+using the desktop IDE.
+Once you've made sure you can load a simple sketch successfully, you'll follow these steps:
 
 ### Arduino Desktop IDE
 
-If you're running using the downloaded Arduino application, you'll need to fetch the latest version of this sketch. The easiest way is to [download a zip file](https://github.com/tensorflow/tflite-micro-arduino-examples/archive/refs/heads/main.zip) and unpack it, but if you're familiar with `git` you can clone this repository.
+If you're running using the Arduino IDE application, you'll need to fetch the latest version of this sketch. 
+To install the TensorFlow Lite Micro for Arduino library, see the
+[how to install](../../README.md#how-to-install) instructions.
 
 Open up the magic_wand.ino file in the Arduino editor, and make sure the Arduino board is visible and connected to the right port. You'll need to search for the some libraries that the sketch depends on, using `Sketch->Include Library->Manage Libraries` from the main menu. The [Arduino_LSM9DS1](https://github.com/arduino-libraries/Arduino_LSM9DS1) lets us access the accelerometer and gyroscope readings from the board's IMU, and you need at least version 1.1.0. We'll be using Bluetooth to communicate with the web page, so you should also search for [ArduinoBLE](https://www.arduino.cc/en/Reference/ArduinoBLE) and make sure you've got version 1.1.3 or newer.
 
 You should now be able to press the upload button to compile and install the sketch on your board.
-
-### Arduino Web Editor
-
-The web editor doesn't need any library installation, it automatically picks the most recent versions of any libraries required. You can just use `upload` to install it on your board.
 
 ## Building the Wand
 
