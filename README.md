@@ -51,7 +51,7 @@ git pull
 ### Checking your Installation
 
 Once the library has been installed, you should then start the Arduino IDE.
-You will now see an Arduino_TensorFlowLite
+You will now see an `Arduino_TensorFlowLite`
 entry in the `File -> Examples` menu of the Arduino IDE. This submenu contains a list
 of sample projects you can try out.
 
