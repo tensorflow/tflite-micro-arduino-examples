@@ -20,14 +20,23 @@ limitations under the License.
 #include <limits>
 
 #include "peripherals/i2c_arduino.h"
-#include "peripherals/i2s_nrf52840.h"
-#include "peripherals/utility.h"
 #include "peripherals/wm8960.h"
 
+#if defined(ARDUINO_ARDUINO_NANO33BLE)
+#include "peripherals/i2s_nrf52840.h"
+#elif defined(ARDUINO_TEENSY41) || defined(ARDUINO_TEENSY40)
+#include "peripherals/i2s_imxrt1062.h"
+#endif
+
 namespace {
+
 peripherals::I2C& i2c = peripherals::I2C_Arduino::Instance0();
 peripherals::IAudioCodec& codec = peripherals::WM8960::Instance(i2c);
+#if defined(ARDUINO_ARDUINO_NANO33BLE)
 peripherals::IAudioI2S& i2s = peripherals::I2S_nrf52840::Instance();
+#elif defined(ARDUINO_TEENSY41) || defined(ARDUINO_TEENSY40)
+peripherals::IAudioI2S& i2s = peripherals::I2S_imxrt1062::Instance();
+#endif
 
 bool is_playing_sin_wave = false;
 uint32_t play_sin_wave_index = 0;
@@ -86,7 +95,6 @@ bool SetVolume(peripherals::AudioFunction which, float percent) {
 bool PlaySawWave(bool start) {
   if (start) {
     play_sin_wave_index = 0;
-    digitalWrite(LEDB, HIGH);
   }
 
   auto start_time = micros();
@@ -134,7 +142,7 @@ bool PlaySawWave(bool start) {
   }
 
   if (write_count != kNumSamples) {
-    digitalWrite(LEDB, LOW);
+    peripherals::TimestampBuffer::Instance().Insert('W');
   }
   play_sin_wave_index += write_count;
   is_playing_sin_wave = true;
@@ -284,13 +292,25 @@ bool waiting_input = false;
 }  // namespace
 
 void setup() {
-  pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(LEDB, OUTPUT);
-  digitalWrite(LEDB, HIGH);
+  peripherals::Initialize();
+
   Serial.begin(9600);
   while (!Serial) {
     // wait
   }
+
+  if (!i2s.Initialize()) {
+    while (true) {
+      Serial.println("I2S initialization FAILED");
+    }
+  }
+  if (!codec.Initialize()) {
+    while (true) {
+      Serial.println("Codec initialization FAILED");
+    }
+  }
+
+  peripherals::LED::Instance().SetBlinkParams(0.5f, 1000);
 
   i2s.SetCallbackHandler(Handler);
 
@@ -298,11 +318,7 @@ void setup() {
 }
 
 void loop() {
-  digitalWrite(LED_BUILTIN, HIGH);
-  peripherals::DelayMilliseconds(250);
-  peripherals::TimestampBuffer::Instance().Show();
-  digitalWrite(LED_BUILTIN, LOW);
-  peripherals::DelayMilliseconds(250);
+  peripherals::LED::Instance().Blink();
   peripherals::TimestampBuffer::Instance().Show();
 
   if (i2s.HadPlayUnderrun()) {
@@ -318,6 +334,7 @@ void loop() {
   }
 
   if (waiting_input) {
+#if !defined(ARDUINO_TEENSY41) && !defined(ARDUINO_TEENSY40)
     while (Serial.available()) {
       int c = Serial.read();
       if (c == '\n') {
@@ -336,6 +353,24 @@ void loop() {
         break;
       }
     }
+#else
+    // Teensy serial input broken with Ubuntu 18.04.6, use the button instead
+    if (peripherals::Button::Instance().GetPressState() ==
+        peripherals::kPressed) {
+      auto start_time = micros();
+      bool result = tests[test_index++].func();
+      auto end_time = micros();
+      if (result) {
+        Serial.print("done");
+      } else {
+        Serial.print("FAIL");
+      }
+      Serial.print(" (");
+      Serial.print(end_time - start_time);
+      Serial.println("us)");
+      waiting_input = false;
+    }
+#endif
   } else {
     Serial.print(tests[test_index].test);
     Serial.print("...");

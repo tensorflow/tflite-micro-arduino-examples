@@ -37,7 +37,6 @@ class WM8960 final : public IAudioCodec {
   AudioConfiguration cached_config_;
   uint16_t register_cache_[kREGISTER_LAST_ + 1];
 
-  bool Initialize();
   void WriteRegister(const WM8960_Registers reg);
   void UpdateField(const WM8960_Field& field, const uint16_t value);
   void Play(const bool enable);
@@ -48,6 +47,8 @@ class WM8960 final : public IAudioCodec {
   void SetRecordVolume(const float percent);
   void SetConfig(const AudioConfiguration& config);
   void PowerDown(const bool want_power_down);
+
+  bool Initialize() override;
 
   virtual AudioConfiguration GetCurrentConfiguration() const override;
   virtual bool SetCurrentConfiguration(

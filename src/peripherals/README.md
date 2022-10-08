@@ -10,17 +10,23 @@ Currently supported peripherals:
 
 ## Table of contents
 <!--ts-->
-* [TensorFlow Lite Micro Peripherals](#tensorflow-lite-micro-peripherals)
-   * [Waveshare WM8960 Audio HAT](#waveshare-wm8960-audio-hat)
-      * [Supported Capabilities](#supported-capabilities)
-      * [Audio Board Pin Connections](#audio-board-pin-connections)
-      * [Use with Tiny Machine Learning Kit (TMLK)](#use-with-tiny-machine-learning-kit-tmlk)
-         * [Parts List and Tools Required](#parts-list-and-tools-required)
-         * [Assembly](#assembly)
-         * [Notes](#notes)
-      * [Testing](#testing)
-   * [Button](#button)
-   * [LEDs](#leds)
+* [Waveshare WM8960 Audio HAT](#waveshare-wm8960-audio-hat)
+  * [Supported Capabilities](#supported-capabilities)
+  * [Audio Board Pin Connections](#audio-board-pin-connections)
+      * [Notes](#notes)
+  * [Use with Tiny Machine Learning Kit (TMLK)](#use-with-tiny-machine-learning-kit-tmlk)
+      * [Parts List and Tools Required](#parts-list-and-tools-required)
+      * [Assembly](#assembly)
+      * [Notes](#notes-1)
+  * [Use with Teensy 4.1](#use-with-teensy-41)
+      * [Teensy pins connected to T-Cobbler Plus:](#teensy-pins-connected-to-t-cobbler-plus)
+      * [Teensy pins connected directly to audio board:](#teensy-pins-connected-directly-to-audio-board)
+      * [Parts List and Tools Required](#parts-list-and-tools-required-1)
+      * [Assembly](#assembly-1)
+      * [Notes](#notes-2)
+  * [Testing](#testing)
+* [Button](#button)
+* [LEDs](#leds)
 <!--te-->
 
 ## Waveshare WM8960 Audio HAT
@@ -72,6 +78,13 @@ Male connectors are used for signals, female for power:
 
 [![top](/docs/TMLK_WS_wm8960_images/IMG_1356.JPG)](/docs/TMLK_WS_wm8960_images/IMG_1356.JPG)
 [![bottom](/docs/TMLK_WS_wm8960_images/IMG_1357.JPG)](/docs/TMLK_WS_wm8960_images/IMG_1357.JPG)
+
+#### Notes
+
+* WM8960 crystal is 23.9996MHz
+* Oscilloscope measurements for 16KHz sample rate, 16 bits per channel, two channels
+  * LR clock is 15.9998KHz
+  * Bit clock is 511.992KHz
 
 ### Use with Tiny Machine Learning Kit (TMLK)
 
@@ -177,10 +190,143 @@ Additional images of fully assembled device:
 * VIN/GND on TMLK board with all wires connected to WM8960
   * 4.66V with USB isolator
   * 4.65V without USB isolator
-* WM8960 crystal is 23.9996MHz
-* Oscilloscope measurements for 16KHz sample rate, 16 bits per channel, two channels
-  * LR clock is 15.9998KHz
-  * Bit clock is 511.992KHz
+
+### Use with Teensy 4.1
+
+Wiring color in the tables matches the images in this document.
+Jumper wire vendors may have other color combinations.
+
+Power is supplied to the audio board by `VIN` on the Teensy
+board.  `VIN` of the board supplies +5V.
+
+Note: `VIN` is connected to `VUSB` on the Teensy, thus when the
+Teensy is powered by the USB cable, `VIN` will be an output.
+
+#### Teensy pins connected to T-Cobbler Plus:
+
+| Teensy label | Color | Breadboard <br> Location  | Function | T-Cobbler Plus <br> label |
+| ---          | ---   | :---:                     | ---      | :---:                     |
+| 5V (VIN)     | White | H-63, B-4                 | 5V       | 5.0V                      |
+| G (GND)      | Black | B-63, B-6                 | Ground   | GND                       |
+| 18           |       | I-5, I-35 <br> J-35, J-55 | I2C_DATA | SDA                       |
+| 19           |       | H-6, H-36 <br> I-36, I-56 | I2C_CLK  | SCL                       |
+|              |       |                           |          |                           |
+
+#### Teensy pins connected directly to audio board:
+
+| Teensy label | Color  | Breadboard <br> Location | Function                 | Direction |
+| ---          | ---    | :---:                    | ---                      | ---       |
+| 15           | Yellow | H-52                     | Button <br> 3.3V pull-up | IN        |
+| 4            | Green  | B-58                     | I2S_BCLK                 | IN        |
+| 3            | Blue   | B-59                     | I2S_LRCLK                | IN        |
+| 5            | Purple | B-57                     | I2S_ADC                  | IN        |
+| 2            | Gray   | B-60                     | I2S_DAC                  | OUT       |
+|              |        |                          |                          |           |
+
+If you are having trouble reading the tiny labels on the Teensy board, you may
+want to refer to the [Welcome to Teensy 4.1](https://www.pjrc.com/store/teensy41.html#pins)
+pinout charts.
+
+Jumper wire connections on the [audio board](#audio-board-pin-connections) remain the same
+with the exception of the power and I2C pins, which are connected via the T-Cobbler Plus.
+
+#### Parts List and Tools Required
+
+The following tools are required:
+* Wire cutter
+
+Parts can be ordered from a number of vendors and distributors:
+* DigiKey
+* Mouser
+* ProtoSupplies
+* Adafruit
+* SparkFun
+* Amazon
+* Waveshare
+
+The following is the list of parts:
+* [Teensy 4.1 Fully Loaded w/16Mbytes PSRAM option](https://protosupplies.com/product/teensy-4-1-fully-loaded/)
+* [Waveshare WM8960 Audio HAT](https://www.waveshare.com/wm8960-audio-hat.htm)
+* [Adafruit T-Cobbler Plus](https://www.adafruit.com/product/2028)
+* 4.7K Ohm resistors (1/4 watt or higher) (requires 2)
+* 7mm U-shaped (solid) jumper wire (requires 3)
+* 50mm U-shaped (solid) jumper wire (requires 2)
+* 75mm U-shaped (solid) jumper wire (requires 2)
+* 20cm male-male jumper wire, 2.54mm pitch (requires 2)
+* 20cm male-female jumper wire, 2.54mm pitch (requires 5)
+* M2.5 25mm male-female nylon standoffs(requires 2)
+* M2.5 6mm male-female nylon standoffs(requires 2)
+* M2.5 nylon nut (requires 2)
+* USB 2.0 Micro-B Male to USB A Male cable
+* [Solderless Breadboard, 830 Tie-Points](https://protosupplies.com/product/solderless-breadboard-snap-lock-830-pro-series/)
+
+The jumper wires are usually ordered in a pack of 40.
+The U-shaped (solid) jumper wires are usually ordered in a box assortment.
+
+The resistors can be ordered individually or as part of an assortment.
+
+The nylon standoffs are usually ordered in a box assortment.
+
+#### Assembly
+
+1. Connect the nylon standoffs to the audio board mounting holes on the same side
+of the audio board as the headphone/speaker connections.
+2. Place the breadboard in front of you with the numbers on the breadboard
+increasing from left to right.
+2. Place the T-Cobbler Plus onto the breadboard with the 40-pin connecter on the
+left edge of the breadboard.  The T-Cobbler Plus should be placed such that the
+four corner pins match the following breadboard locations: `C-4, C-23, G-4, G-23`.
+3. Place the audio board 40-pin connector into the T-Cobbler Plus 40-pin connector
+such that the headphone/speaker connectors are on the left.  Make sure to center
+the audio board 40-pin connector within the T-Cobbler Plus 40-pin connector, as
+there are no guide rails on either connector.
+Failure to do this may result in a **FIRE**.  **Fire** is **bad**.
+4. Place the Teensy onto the breadboard with the USB connector on the right edge.
+The Teensy should be placed such that the four corner pins match the following
+breadboard locations: `C-63, G-63, C-40, G-40`.
+5. Using a 7mm U-shaped (solid) jumper wire, connect breadboard location `J-62`
+to the breadboard bottom `-` rail.
+6. Using a 7mm U-shaped (solid) jumper wire, connect breadboard location `J-23`
+to the breadboard bottom `-` rail.
+7. Using a 7mm U-shaped (solid) jumper wire, connect breadboard location `A-49`
+to the breadboard top `+` rail.
+8. Using a 4.7K resistor, connect breadboard location `G-35` to the breadboard
+top `+` rail.  The resistor leads will need to be bent and trimmed before
+insertion into the breadboard.
+9. Using a 4.7K resistor, connect breadboard location `G-36` to the breadboard
+top `+` rail.  The resistor leads will need to be bent and trimmed before
+insertion into the breadboard.
+10. Using the 50mm and 75mm U-shaped (solid) jumper wire, connect to the
+breadboard locations as per the [Teensy pins/T-Cobbler Plus table](#teensy-pins-connected-to-t-cobbler-plus).
+11. Using the 20cm male-male jumper wire, connect to the breadboard locations as
+per the [Teensy pins/T-Cobbler Plus table](#teensy-pins-connected-to-t-cobbler-plus).
+12. Using the 20cm male-female jumper wire, connect to the breadboard locations as
+per the [Teensy pins direct connection table](#teensy-pins-connected-directly-to-audio-board) and the
+[audio board connections table](#audio-board-pin-connections).
+13. Plug the USB 2.0 cable micro-B connector into the Teensy.
+
+Fully assembled:
+
+[![top view](/docs/Teensy_WS_wm8960_images/IMG_1384.JPG)](/docs/Teensy_WS_wm8960_images/IMG_1384.JPG)
+
+Additional images:
+
+[<img src="../../docs/Teensy_WS_wm8960_images/IMG_1371.JPG" height="200" />](/docs/Teensy_WS_wm8960_images/IMG_1371.JPG)
+[<img src="../../docs/Teensy_WS_wm8960_images/IMG_1376.JPG" height="200" />](/docs/Teensy_WS_wm8960_images/IMG_1376.JPG)
+[<img src="../../docs/Teensy_WS_wm8960_images/IMG_1380.JPG" height="200" />](/docs/Teensy_WS_wm8960_images/IMG_1380.JPG)
+[<img src="../../docs/Teensy_WS_wm8960_images/IMG_1385.JPG" height="200" />](/docs/Teensy_WS_wm8960_images/IMG_1385.JPG)
+
+
+#### Notes
+
+* VIN/GND on Teensy board with all wires connected to WM8960
+  * 4.71V with USB isolator
+  * 4.96V without USB isolator
+* Plug the Teensy USB directly into a laptop or other USB power adapter
+when using the speakers.
+Do not plug into a USB hub, as the hub may not provide sufficient current
+to power the Teensy and the speakers.  Do not use speakers when also using
+a USB isolator due to current limits.
 
 ### Testing
 
@@ -190,11 +336,9 @@ test application is an audio API usage example.
 1. Open the Arduino IDE
 2. Open the `File` menu and navigate to: 
 `Examples -> Arduino_TensorFlowLite -> src -> peripherals -> audio_play_record`
-3. Load the `audio_play_record` application onto the Nano 33 BLE Sense
-4. The application is running when the default LED on the Nano 33 BLE Sense
-is blinking.
-5. Press and hold the button on the audio board (not the TMLK shield button)
-until the LED stops blinking.  
+3. Load the `audio_play_record` application onto the Arduino supported board
+4. The application is running when the default LED on the board is blinking.
+5. Press and hold the button on the audio board until the LED stops blinking.  
 Audio is now being recorded.
 There is enough memory for approx. 3 seconds of recording.
 Release the button to stop recording or wait until the LED is again blinking.

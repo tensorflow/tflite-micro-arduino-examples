@@ -29,11 +29,11 @@ class I2C_Arduino : public I2C {
   static I2C& Instance1();
 
  private:
-  arduino::MbedI2C& channel_;
+  TwoWire& channel_;
   bool channel_initialized_;
 
   I2C_Arduino() = delete;
-  explicit I2C_Arduino(arduino::MbedI2C& channel);
+  explicit I2C_Arduino(TwoWire& channel);
 
   bool Initialize() override;
   void Write(uint8_t address, uint16_t value) override;

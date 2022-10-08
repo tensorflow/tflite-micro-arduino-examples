@@ -13,13 +13,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#include <Arduino.h>
-
 #include <limits>
 
+#include "peripherals.h"
 #include "utility.h"
 
 namespace peripherals {
+
+void Initialize() {
+  // Some boards (ex. Teensy 4.x) are very sensitive to misconfigured
+  // pins that are connected to pull-ups.  This usually results in additional
+  // noise being propagated throughout the SOC, interfering with other modules
+  // like I2C.
+  pinMode(kLED_DEFAULT_GPIO, OUTPUT);
+  pinMode(kBUTTON_GPIO, INPUT);
+  pinMode(kI2S_BIT_CLK, INPUT);
+  pinMode(kI2S_LR_CLK, INPUT);
+  pinMode(kI2S_DATA_IN, INPUT);
+  pinMode(kI2S_DATA_OUT, OUTPUT);
+}
 
 void DelayMicroseconds(uint32_t delay) {
   constexpr uint16_t kArduinoAccurateDelay = 16383;
@@ -75,6 +87,13 @@ void TimestampBuffer::Insert(const char c) {
 }
 
 void TimestampBuffer::Show() {
+  uint32_t prev_time;
+  if (show_index_ == 0) {
+    prev_time = entries_[kNumEntries - 1].timestamp_us_;
+  } else {
+    prev_time = entries_[show_index_ - 1].timestamp_us_;
+  }
+
   while (show_index_ != insert_index_) {
     if (entries_[show_index_].c_ == '\0') {
       // overflow message
@@ -83,10 +102,14 @@ void TimestampBuffer::Show() {
       Serial.println("*** TimestampBuffer Overflow ***");
       break;
     } else {
-      Serial.print(entries_[show_index_].timestamp_us_);
-      Serial.print(": ");
+      uint32_t show_time = entries_[show_index_].timestamp_us_;
+      Serial.print(show_time);
+      Serial.print(" (");
+      Serial.print(show_time - prev_time);
+      Serial.print("): ");
       Serial.println(entries_[show_index_].c_);
       show_index_ = (show_index_ + 1) % kNumEntries;
+      prev_time = show_time;
     }
   }
   show_index_ = insert_index_;

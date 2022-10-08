@@ -13,44 +13,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef PERIPHERALS_UTILITY_H_
-#define PERIPHERALS_UTILITY_H_
+#ifndef PERIPHERALS_WS_WM8960_AUDIO_HAT_IMXRT1062_H_
+#define PERIPHERALS_WS_WM8960_AUDIO_HAT_IMXRT1062_H_
 
-#include <cstddef>
-#include <cstdint>
+#include "audio_device.h"
 
 namespace peripherals {
 
-extern void Initialize();
-
-extern void DelayMicroseconds(uint32_t delay);
-extern void DelayMilliseconds(uint32_t delay);
-
-extern uint32_t MicrosecondsCounter();
-extern uint32_t MillisecondsCounter();
-
-extern void DebugOutput(const char* s);
-
-class TimestampBuffer {
+// Composite audio device implementation for:
+// WaveShare WM8960 Audio Hat used with IMXRT1062 SOC
+class WS_WM8960_AudioHat_IMXRT1062 final : public AudioDevice {
  public:
-  static TimestampBuffer& Instance();
-
-  void Insert(const char c);
-  void Show();
+  static AudioDevice& Instance();
 
  private:
-  TimestampBuffer();
-
-  size_t insert_index_;
-  size_t show_index_;
-
-  static constexpr size_t kNumEntries = 100;
-  struct {
-    uint32_t timestamp_us_;
-    char c_;
-  } entries_[kNumEntries];
+  WS_WM8960_AudioHat_IMXRT1062();
 };
 
 }  // namespace peripherals
 
-#endif  // PERIPHERALS_UTILITY_H_
+#endif  // PERIPHERALS_WS_WM8960_AUDIO_HAT_IMXRT1062_H_

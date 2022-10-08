@@ -13,19 +13,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#ifndef PERIPHERALS_I2S_NRF52840_H_
-#define PERIPHERALS_I2S_NRF52840_H_
+#ifndef PERIPHERALS_I2S_IMXRT1062_H_
+#define PERIPHERALS_I2S_IMXRT1062_H_
 
+#include "DMAChannel.h"
 #include "audio_i2s.h"
 
 namespace peripherals {
 
-class I2S_nrf52840 final : public IAudioI2S {
+class I2S_imxrt1062 final : public IAudioI2S {
  public:
-  static I2S_nrf52840& Instance();
-  void InterruptHandler();
+  static I2S_imxrt1062& Instance();
 
  private:
+  void DMA_InterruptHandler(const AudioFunction which);
+  void EnableInterrupts(const AudioFunction which) const;
+  void DisableInterrupts(const AudioFunction which) const;
+
   void SetCallbackHandler(const AudioCallback handler) override;
 
   AudioConfiguration GetCurrentConfiguration() const override;
@@ -43,14 +47,14 @@ class I2S_nrf52840 final : public IAudioI2S {
 
   bool Initialize() override;
 
-  I2S_nrf52840();
+  I2S_imxrt1062();
 
   void StartPlay();
   void StartRecord();
-  void StartDMA();
+  void StartDMA(const AudioFunction which);
+  void StopDMA();
   void StopPlay();
   void StopRecord();
-  bool SetConfig(const AudioConfiguration& config);
   size_t BytesToSamples(const size_t num_bytes) const;
   size_t SamplesToBytes(const size_t num_samples) const;
   bool SameBufferSegment(const uint8_t* a, const uint8_t* b) const;
@@ -77,11 +81,14 @@ class I2S_nrf52840 final : public IAudioI2S {
   volatile uint8_t* record_read_ptr_;
   volatile uint8_t* record_current_dma_ptr_;
   volatile uint8_t* record_next_dma_ptr_;
-  alignas(uint32_t) uint8_t play_buffer_[I2S_nrf52840::kBufferSize];
-  alignas(uint32_t) uint8_t record_buffer_[I2S_nrf52840::kBufferSize];
+  // 32 byte alignment for ARM cache flush/delete
+  alignas(32) uint8_t play_buffer_[I2S_imxrt1062::kBufferSize];
+  alignas(32) uint8_t record_buffer_[I2S_imxrt1062::kBufferSize];
   AudioConfiguration cached_config_;
+  DMAChannel dma_tx_;
+  DMAChannel dma_rx_;
 };
 
 }  // namespace peripherals
 
-#endif  // PERIPHERALS_I2S_NRF52840_H_
+#endif  // PERIPHERALS_I2S_IMXRT1062_H_

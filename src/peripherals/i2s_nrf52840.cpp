@@ -13,6 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
+#ifdef ARDUINO_ARCH_NRF52840
+
 #undef I2S_NRF52840_DEBUG
 #undef I2S_NRF52840_DEBUG_INT
 
@@ -55,7 +57,7 @@ AudioConfiguration I2S_nrf52840::GetCurrentConfiguration() const {
 }
 
 bool I2S_nrf52840::SetCurrentConfiguration(const AudioConfiguration& config) {
-  if (!Initialize()) {
+  if (!is_initialized_) {
     return false;
   }
 
@@ -107,7 +109,7 @@ bool I2S_nrf52840::SetCurrentConfiguration(const AudioConfiguration& config) {
 }
 
 void I2S_nrf52840::Start(const AudioFunction which) {
-  if (!Initialize()) {
+  if (!is_initialized_) {
     return;
   }
 
@@ -126,7 +128,7 @@ void I2S_nrf52840::Start(const AudioFunction which) {
 }
 
 void I2S_nrf52840::Stop(const AudioFunction which) {
-  if (!Initialize()) {
+  if (!is_initialized_) {
     return;
   }
 
@@ -301,7 +303,7 @@ size_t I2S_nrf52840::ReadRecordBuffer(void* const to, const size_t samples) {
 }
 
 uint64_t I2S_nrf52840::SampleCount(const AudioFunction which) {
-  if (!Initialize()) {
+  if (!is_initialized_) {
     return 0;
   }
 
@@ -326,7 +328,7 @@ uint64_t I2S_nrf52840::SampleCount(const AudioFunction which) {
 }
 
 size_t I2S_nrf52840::BufferAvailable(const AudioFunction which) {
-  if (!Initialize()) {
+  if (!is_initialized_) {
     return 0;
   }
 
@@ -784,3 +786,5 @@ bool I2S_nrf52840::SameBufferSegment(const uint8_t* a, const uint8_t* b) const {
 }
 
 }  // namespace peripherals
+
+#endif  // ARDUINO_ARCH_NRF52840

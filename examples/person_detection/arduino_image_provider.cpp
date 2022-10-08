@@ -23,12 +23,6 @@ limitations under the License.
 
 using namespace test_over_serial;
 
-#if defined(ARDUINO) && !defined(ARDUINO_ARDUINO_NANO33BLE)
-#define ARDUINO_EXCLUDE_CODE
-#endif  // defined(ARDUINO) && !defined(ARDUINO_ARDUINO_NANO33BLE)
-
-#ifndef ARDUINO_EXCLUDE_CODE
-
 #include "Arduino.h"
 
 namespace {
@@ -195,5 +189,3 @@ TfLiteStatus GetImage(tflite::ErrorReporter* error_reporter,
   }
   // NOTREACHED
 }
-
-#endif  // ARDUINO_EXCLUDE_CODE

@@ -4,12 +4,14 @@ This repository has the code (including examples) needed to use Tensorflow Lite 
 
 ## Table of contents
 <!--ts-->
-* [Table of contents](#table-of-contents)
 * [Build Status](#build-status)
 * [How to Install](#how-to-install)
   * [GitHub](#github)
+  * [Install Arduino IDE](#install-arduino-ide)
+  * [Install Teensy support](#install-teensy-support)
   * [Checking your Installation](#checking-your-installation)
 * [Compatibility](#compatibility)
+  * [Examples/Device Matrix](#examplesdevice-matrix)
 * [License](#license)
 * [Contributing](#contributing)
 <!--te-->
@@ -48,6 +50,42 @@ cd Arduino_TensorFlowLite
 git pull
 ```
 
+### Install Arduino IDE
+
+```
+cd $HOME
+wget https://downloads.arduino.cc/arduino-1.8.19-linux64.tar.xz
+tar -xf arduino-1.8.19-linux64.tar.xz
+```
+
+### Install Teensy support
+
+* Tested with Ubuntu version 18.04.6 running in Parallels 17 VM
+* Tested with Arduino IDE version 1.8.19
+* Tested with Teensyduino version 1.57
+* Terminal commands:
+  * Make sure Teensy is unplugged from USB or switched off
+  ```
+  wget https://www.pjrc.com/teensy/td_157/TeensyduinoInstall.linux64
+  wget https://www.pjrc.com/teensy/00-teensy.rules
+  sudo cp 00-teensy.rules /etc/udev/rules.d/
+  chmod 755 TeensyduinoInstall.linux64
+  ./TeensyduinoInstall.linux64
+  ```
+  * Choose installation of `all` Teensy additional libraries
+  * Teensy can now be plugged into USB or switched on
+* Remove ModemManager
+  * ModemManager interferes with serial port usage and must be disabled or removed.
+  * To disable (Ubuntu Linux):
+  ```
+  systemctl disable ModemManager.service
+  systemctl stop ModemManager.service
+  ```
+  * To remove (Ubuntu Linux):
+  ```
+  sudo apt-get purge modemmanager
+  ```
+
 ### Checking your Installation
 
 Once the library has been installed, you should then start the Arduino IDE.
@@ -59,10 +97,15 @@ of sample projects you can try out.
 
 ## Compatibility
 
-This library is designed for the `Arduino Nano 33 BLE Sense` board. The framework
+The framework
 code for running machine learning models should be compatible with most Arm Cortex
 M-based boards, such as the `Raspberry Pi Pico`, but the code to access peripherals
 like microphones, cameras, and accelerometers is specific to the `Nano 33 BLE Sense`.
+Certain example applications are only supported on particular boards.
+
+### Examples/Device Matrix
+
+TBD table of examples and devices
 
 ## License
 

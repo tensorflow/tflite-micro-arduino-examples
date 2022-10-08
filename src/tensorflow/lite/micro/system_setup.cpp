@@ -17,24 +17,10 @@ limitations under the License.
 
 #include <limits>
 
+#include "peripherals/peripherals.h"
 #include "tensorflow/lite/micro/debug_log.h"
 
-#if defined(ARDUINO) && !defined(ARDUINO_ARDUINO_NANO33BLE)
-#define ARDUINO_EXCLUDE_CODE
-#endif  // defined(ARDUINO) && !defined(ARDUINO_ARDUINO_NANO33BLE)
-
-#ifndef ARDUINO_EXCLUDE_CODE
-
-#include "Arduino.h"
-
-// The Arduino DUE uses a different object for the default serial port shown in
-// the monitor than most other models, so make sure we pick the right one. See
-// https://github.com/arduino/Arduino/issues/3088#issuecomment-406655244
-#if defined(__SAM3X8E__)
 #define DEBUG_SERIAL_OBJECT (SerialUSB)
-#else
-#define DEBUG_SERIAL_OBJECT (Serial)
-#endif
 
 extern "C" void DebugLog(const char* s) { DEBUG_SERIAL_OBJECT.print(s); }
 
@@ -43,6 +29,8 @@ namespace tflite {
 constexpr ulong kSerialMaxInitWait = 4000;  // milliseconds
 
 void InitializeTarget() {
+  peripherals::Initialize();
+
   DEBUG_SERIAL_OBJECT.begin(9600);
   ulong start_time = millis();
   while (!DEBUG_SERIAL_OBJECT) {
@@ -69,12 +57,29 @@ void SerialChangeBaudRate(const int baud) {
   }
 }
 
-class _RingBuffer : public RingBufferN<kSerialMaxInputLength + 1> {
+template <size_t N>
+class _LineBuffer {
  public:
-  bool need_reset = false;
-};
+  bool NeedReset() { return need_reset_; }
+  void NeedReset(bool value) { need_reset_ = value; }
+  void Clear() {
+    need_reset_ = false;
+    index_ = 0;
+  }
+  char* Buffer() { return buffer_; }
+  size_t Available() { return index_; }
+  size_t AvailableToStore() { return N - index_; }
+  void StoreChar(char c) {
+    if (index_ < N) {
+      buffer_[index_++] = c;
+    }
+  }
 
-static _RingBuffer _ring_buffer;
+ private:
+  bool need_reset_ = false;
+  size_t index_ = 0;
+  char buffer_[N];
+};
 
 // SerialReadLine
 // Read a set of ASCII characters from the default
@@ -89,9 +94,10 @@ static _RingBuffer _ring_buffer;
 // the newline character or zero terminator.
 // Returns {0, NULL} if the timeout occurs.
 std::pair<size_t, char*> SerialReadLine(int timeout) {
-  if (_ring_buffer.need_reset) {
-    _ring_buffer.need_reset = false;
-    _ring_buffer.clear();
+  static _LineBuffer<kSerialMaxInputLength + 1> line_buffer;
+
+  if (line_buffer.NeedReset()) {
+    line_buffer.Clear();
   }
 
   ulong start_time = millis();
@@ -101,16 +107,16 @@ std::pair<size_t, char*> SerialReadLine(int timeout) {
     if (value >= 0) {
       if (value == '\n') {
         // read a newline character
-        _ring_buffer.store_char('\0');
-        _ring_buffer.need_reset = true;
+        line_buffer.StoreChar('\0');
+        line_buffer.NeedReset(true);
         break;
       } else {
         // read other character
-        _ring_buffer.store_char(value);
-        if (_ring_buffer.availableForStore() == 1) {
+        line_buffer.StoreChar(value);
+        if (line_buffer.AvailableToStore() == 1) {
           // buffer is full
-          _ring_buffer.store_char('\0');
-          _ring_buffer.need_reset = true;
+          line_buffer.StoreChar('\0');
+          line_buffer.NeedReset(true);
           break;
         }
       }
@@ -124,8 +130,7 @@ std::pair<size_t, char*> SerialReadLine(int timeout) {
     }
   }
 
-  return std::make_pair(static_cast<size_t>(_ring_buffer.available() - 1),
-                        reinterpret_cast<char*>(_ring_buffer._aucBuffer));
+  return std::make_pair(line_buffer.Available() - 1, line_buffer.Buffer());
 }
 
 // SerialWrite
@@ -134,5 +139,3 @@ std::pair<size_t, char*> SerialReadLine(int timeout) {
 void SerialWrite(const char* buffer) { DEBUG_SERIAL_OBJECT.print(buffer); }
 
 }  // namespace test_over_serial
-
-#endif  // ARDUINO_EXCLUDE_CODE

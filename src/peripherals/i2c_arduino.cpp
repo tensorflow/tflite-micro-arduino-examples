@@ -31,7 +31,7 @@ I2C& I2C_Arduino::Instance1() {
   return i2c_arduino_static_1;
 }
 
-I2C_Arduino::I2C_Arduino(arduino::MbedI2C& channel)
+I2C_Arduino::I2C_Arduino(TwoWire& channel)
     : I2C(), channel_(channel), channel_initialized_(false) {}
 
 bool I2C_Arduino::Initialize() {

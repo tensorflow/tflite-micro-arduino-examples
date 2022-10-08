@@ -103,8 +103,8 @@ class Button_Arduino : Button {
   }
 
  private:
-  static constexpr uint32_t kLongPressTime = 900;  // milliseconds
-  static constexpr uint32_t kStableTime = 50;      // milliseconds
+  static constexpr uint32_t kLongPressTime = 1200;  // milliseconds
+  static constexpr uint32_t kStableTime = 50;       // milliseconds
 
   ButtonState button_state_current_;
   ButtonState button_state_prev_;

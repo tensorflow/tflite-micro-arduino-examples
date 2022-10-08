@@ -82,20 +82,24 @@ bool waiting_input = false;
 }  // namespace
 
 void setup() {
-  pinMode(LED_BUILTIN, OUTPUT);
+  peripherals::Initialize();
+
   Serial.begin(9600);
   while (!Serial) {
     // wait
   }
+  if (!codec.Initialize()) {
+    while (true) {
+      Serial.println("Codec initialization FAILED");
+    }
+  }
+  peripherals::LED::Instance().SetBlinkParams(0.5f, 1000);
 
   Serial.println("Start of Tests");
 }
 
 void loop() {
-  digitalWrite(LED_BUILTIN, HIGH);
-  peripherals::DelayMilliseconds(500);
-  digitalWrite(LED_BUILTIN, LOW);
-  peripherals::DelayMilliseconds(500);
+  peripherals::LED::Instance().Blink();
 
   if (test_index < 0) {
     return;
@@ -106,6 +110,7 @@ void loop() {
   }
 
   if (waiting_input) {
+#if !defined(ARDUINO_TEENSY41) && !defined(ARDUINO_TEENSY40)
     while (Serial.available()) {
       int c = Serial.read();
       if (c == '\n') {
@@ -124,6 +129,24 @@ void loop() {
         break;
       }
     }
+#else
+    // Teensy serial input broken with Ubuntu 18.04.6, use the button instead
+    if (peripherals::Button::Instance().GetPressState() ==
+        peripherals::kPressed) {
+      auto start_time = micros();
+      bool result = tests[test_index++].func();
+      auto end_time = micros();
+      if (result) {
+        Serial.print("done");
+      } else {
+        Serial.print("FAIL");
+      }
+      Serial.print(" (");
+      Serial.print(end_time - start_time);
+      Serial.println("us)");
+      waiting_input = false;
+    }
+#endif
   } else {
     Serial.print(tests[test_index].test);
     Serial.print("...");

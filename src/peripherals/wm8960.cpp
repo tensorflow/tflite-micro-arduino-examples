@@ -57,6 +57,28 @@ bool WM8960::Initialize() {
   UpdateField(DACMU, kDACMU_MUTE);
   UpdateField(LINMUTE, kL_R_INMUTE_ENABLE);
   UpdateField(RINMUTE, kL_R_INMUTE_ENABLE);
+
+  UpdateField(SOFT_ST, kSOFT_ST_ENABLE);
+  WriteRegister(kANTI_POP_1);
+  // turn on VREF and VMIDSEL
+  UpdateField(VREF, kPOWER_MANAGEMENT_POWER_ON);
+  UpdateField(VMIDSEL, kVMIDSEL_ENABLE);
+  // turn on all analog sections
+  UpdateField(MICB, kPOWER_MANAGEMENT_POWER_ON);
+  UpdateField(AINL, kPOWER_MANAGEMENT_POWER_ON);
+  UpdateField(AINR, kPOWER_MANAGEMENT_POWER_ON);
+  WriteRegister(kPOWER_MANAGEMENT_1);
+  UpdateField(LMIC, kPOWER_MANAGEMENT_POWER_ON);
+  UpdateField(RMIC, kPOWER_MANAGEMENT_POWER_ON);
+  UpdateField(LOMIX, kPOWER_MANAGEMENT_POWER_ON);
+  UpdateField(ROMIX, kPOWER_MANAGEMENT_POWER_ON);
+  WriteRegister(kPOWER_MANAGEMENT_3);
+  UpdateField(LOUT1, kPOWER_MANAGEMENT_POWER_ON);
+  UpdateField(ROUT1, kPOWER_MANAGEMENT_POWER_ON);
+  UpdateField(SPKL, kPOWER_MANAGEMENT_POWER_ON);
+  UpdateField(SPKR, kPOWER_MANAGEMENT_POWER_ON);
+  WriteRegister(kPOWER_MANAGEMENT_2);
+
   // reset does not setup a low-power state
   PowerDown(true);
 
@@ -418,6 +440,9 @@ void WM8960::SetConfig(const AudioConfiguration& config) {
   WriteRegister(kAUDIO_INTERFACE_2);
 
   switch (config.channel_config) {
+    case kMono:
+      UpdateField(DMONOMIX, kDMONOMIX_MONO);
+      break;
     case kStereo:
       // fallthrough
     default:
@@ -439,25 +464,11 @@ void WM8960::PowerDown(const bool want_power_down) {
       WriteRegister(kANTI_POP_1);
       UpdateField(DACL, power_enable);
       UpdateField(DACR, power_enable);
-      UpdateField(LOUT1, power_enable);
-      UpdateField(ROUT1, power_enable);
-      UpdateField(SPKL, power_enable);
-      UpdateField(SPKR, power_enable);
-      WriteRegister(kPOWER_MANAGEMENT_2);
-      UpdateField(LOMIX, power_enable);
-      UpdateField(ROMIX, power_enable);
-      WriteRegister(kPOWER_MANAGEMENT_3);
     }
     if (!is_recording_) {
-      UpdateField(AINL, power_enable);
-      UpdateField(AINR, power_enable);
       UpdateField(ADCL, power_enable);
       UpdateField(ADCR, power_enable);
-      UpdateField(MICB, power_enable);
       WriteRegister(kPOWER_MANAGEMENT_1);
-      UpdateField(LMIC, power_enable);
-      UpdateField(RMIC, power_enable);
-      WriteRegister(kPOWER_MANAGEMENT_3);
     }
     if (!is_playing_ && !is_recording_) {
       // turn off the over-temp protection
@@ -471,23 +482,11 @@ void WM8960::PowerDown(const bool want_power_down) {
       WriteRegister(kPOWER_MANAGEMENT_2);
       UpdateField(DIGENB, kDIGENB_DISABLE);
       WriteRegister(kPOWER_MANAGEMENT_1);
-      // can now turn off VREF and VMIDSEL
-      UpdateField(VREF, power_enable);
-      UpdateField(VMIDSEL, kVMIDSEL_DISABLE);
-      WriteRegister(kPOWER_MANAGEMENT_1);
-      UpdateField(SOFT_ST, ~kSOFT_ST_ENABLE);
-      WriteRegister(kANTI_POP_1);
       is_mclk_disabled_ = true;
     }
   } else {
     // power up
     if (is_mclk_disabled_) {
-      UpdateField(SOFT_ST, kSOFT_ST_ENABLE);
-      WriteRegister(kANTI_POP_1);
-      // turn on VREF and VMIDSEL
-      UpdateField(VREF, power_enable);
-      UpdateField(VMIDSEL, kVMIDSEL_ENABLE);
-      WriteRegister(kPOWER_MANAGEMENT_1);
       // turn on PLL then MCLK
       UpdateField(PLL_EN, power_enable);
       WriteRegister(kPOWER_MANAGEMENT_2);
@@ -504,29 +503,16 @@ void WM8960::PowerDown(const bool want_power_down) {
     if (is_playing_) {
       UpdateField(DACL, power_enable);
       UpdateField(DACR, power_enable);
-      UpdateField(LOUT1, power_enable);
-      UpdateField(ROUT1, power_enable);
-      UpdateField(SPKL, power_enable);
-      UpdateField(SPKR, power_enable);
       WriteRegister(kPOWER_MANAGEMENT_2);
-      UpdateField(LOMIX, power_enable);
-      UpdateField(ROMIX, power_enable);
-      WriteRegister(kPOWER_MANAGEMENT_3);
       UpdateField(SPK_OP_EN, kSPK_OP_EN_BOTH);
       WriteRegister(kCLASS_D_CONTROL_1);
       UpdateField(HPSTBY, kHPSTBY_NORMAL);
       WriteRegister(kANTI_POP_1);
     }
     if (is_recording_) {
-      UpdateField(AINL, power_enable);
-      UpdateField(AINR, power_enable);
       UpdateField(ADCL, power_enable);
       UpdateField(ADCR, power_enable);
-      UpdateField(MICB, power_enable);
       WriteRegister(kPOWER_MANAGEMENT_1);
-      UpdateField(LMIC, power_enable);
-      UpdateField(RMIC, power_enable);
-      WriteRegister(kPOWER_MANAGEMENT_3);
     }
   }
 }
@@ -666,6 +652,8 @@ bool WM8960::HasSampleRate(const AudioFunction which,
 
 bool WM8960::HasChannelConfig(const AudioChannelConfig channel) const {
   switch (channel) {
+    case kMono:
+      // fallthrough
     case kStereo:
       return true;
     default:

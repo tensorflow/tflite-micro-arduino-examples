@@ -53,10 +53,36 @@ constexpr pin_size_t kLED_DEFAULT_GPIO = D13;
 
 }  // namespace peripherals
 
-#else  // ARDUINO_ARDUINO_NANO33BLE
+#elif defined(ARDUINO_TEENSY41) || defined(ARDUINO_TEENSY40)
+#include <cstdint>
+
+#include "button.h"
+#include "led.h"
+#include "ws_wm8960_audio_hat_imxrt1062.h"
+
+#define AUDIO_DEVICE_WS_WM8960_AUDIO_HAT \
+  &peripherals::WS_WM8960_AudioHat_IMXRT1062::Instance()
+
+namespace peripherals {
+
+constexpr uint8_t kI2S_BIT_CLK = 4;   // BCLK2
+constexpr uint8_t kI2S_LR_CLK = 3;    // LRCLK2
+constexpr uint8_t kI2S_DATA_IN = 5;   // IN2
+constexpr uint8_t kI2S_DATA_OUT = 2;  // OUT2
+constexpr uint32_t kI2S_IRQ_PRIORITY = 7;
+
+constexpr uint32_t kI2C_CLOCK = 100000;
+
+constexpr uint8_t kBUTTON_GPIO = 15;  // A1
+
+constexpr uint8_t kLED_DEFAULT_GPIO = LED_BUILTIN;
+
+}  // namespace peripherals
+
+#else
 #error "unsupported board"
 
-#endif  // ARDUINO_ARDUINO_NANO33BLE
+#endif
 
 #endif  // ARDUINO
 

@@ -13,12 +13,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 
-#if defined(ARDUINO) && !defined(ARDUINO_ARDUINO_NANO33BLE)
-#define ARDUINO_EXCLUDE_CODE
-#endif  // defined(ARDUINO) && !defined(ARDUINO_ARDUINO_NANO33BLE)
-
-#ifndef ARDUINO_EXCLUDE_CODE
-
 #include <cmath>
 
 #include "Arduino.h"
@@ -31,6 +25,7 @@ void RespondToDetection(tflite::ErrorReporter* error_reporter,
   if (!is_initialized) {
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, HIGH);
+#ifdef ARDUINO_ARDUINO_NANO33BLE
     // Pins for the built-in RGB LEDs on the Arduino Nano 33 BLE Sense
     pinMode(LEDR, OUTPUT);
     pinMode(LEDG, OUTPUT);
@@ -39,6 +34,7 @@ void RespondToDetection(tflite::ErrorReporter* error_reporter,
     digitalWrite(LEDG, HIGH);
     digitalWrite(LEDB, HIGH);
     digitalWrite(LEDR, HIGH);
+#endif  // ARDUINO_ARDUINO_NANO33BLE
     is_initialized = true;
   }
 
@@ -48,11 +44,16 @@ void RespondToDetection(tflite::ErrorReporter* error_reporter,
   // Switch on the green LED when a person is detected,
   // the blue when no person is detected
   if (person_score > no_person_score) {
+#ifdef ARDUINO_ARDUINO_NANO33BLE
     digitalWrite(LEDG, LOW);
     digitalWrite(LEDB, HIGH);
+#endif  // ARDUINO_ARDUINO_NANO33BLE
+
   } else {
+#ifdef ARDUINO_ARDUINO_NANO33BLE
     digitalWrite(LEDG, HIGH);
     digitalWrite(LEDB, LOW);
+#endif  // ARDUINO_ARDUINO_NANO33BLE
   }
 
   // Flash the yellow LED after every inference.
@@ -72,5 +73,3 @@ void RespondToDetection(tflite::ErrorReporter* error_reporter,
                        static_cast<int>(no_person_score_int),
                        static_cast<int>(no_person_score_frac * 100));
 }
-
-#endif  // ARDUINO_EXCLUDE_CODE

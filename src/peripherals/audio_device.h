@@ -28,6 +28,32 @@ namespace peripherals {
 // composite default audio device interface
 class AudioDevice {
  public:
+  // Initialize the composite audio device.
+  // This method cannot be used within the audio callback handler.
+  //
+  // Returns:
+  //  true if the audio device components are successfully initialized
+  //  false otherwise
+  virtual bool Initialize() {
+    if (is_callback_handler_active_) {
+      return false;
+    }
+    if (is_initialized_) {
+      return true;
+    }
+    // Initialize I2S component first to insure I/O pins are correctly
+    // configured.
+    if (!i2s_.Initialize()) {
+      return false;
+    }
+    if (!codec_.Initialize()) {
+      return false;
+    }
+
+    is_initialized_ = true;
+    return true;
+  }
+
   // Get the current audio configuration.
   // The current audio configuration is always valid.
   //
@@ -169,6 +195,9 @@ class AudioDevice {
   //  The callback handler may be executed from within an interrupt handler.
   //  Therefore, time spent in the callback handler should be minimized.
   virtual void SetCallbackHandler(const AudioCallback handler) {
+    if (!is_initialized_) {
+      return;
+    }
     if (is_callback_handler_active_) {
       return;
     }
@@ -188,6 +217,7 @@ class AudioDevice {
   IAudioCodec& codec_;
   bool is_callback_handler_active_;
   AudioCallback callback_handler_;
+  bool is_initialized_;
 
   void CallbackHandler(const AudioFunction which) {
     if (callback_handler_ != nullptr) {
@@ -204,7 +234,8 @@ class AudioDevice {
       : i2s_{i2s},
         codec_{codec},
         is_callback_handler_active_{false},
-        callback_handler_{nullptr} {}
+        callback_handler_{nullptr},
+        is_initialized_{false} {}
 };
 
 }  // namespace peripherals

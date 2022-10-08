@@ -20,6 +20,7 @@ limitations under the License.
 #include <type_traits>
 
 #include "tensorflow/lite/micro/debug_log.h"
+#include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "tensorflow/lite/micro/system_setup.h"
 
 namespace {
@@ -28,19 +29,21 @@ peripherals::AudioDevice* audio = nullptr;
 constexpr peripherals::AudioSampleRate kSampleRate = peripherals::kRate_16000;
 constexpr peripherals::AudioSampleWidth kNumBitsPerChannel =
     peripherals::kSize_16bit;
+constexpr size_t kNumChannels = 2;
+static_assert(kNumChannels == 2 || kNumChannels == 1, "");
 
 constexpr size_t kNumSamples = 48000;
 constexpr size_t kNumZeroSamples = kSampleRate / 10;  // 100 milliseconds
-constexpr size_t kNumChannels = 2;
-static_assert(kNumChannels == 2 || kNumChannels == 1);
 
 int16_t record_play_buffer[kNumSamples][kNumChannels];
 
 constexpr size_t kNumBytesPerChannel = kNumBitsPerChannel / 8;
-static_assert(kNumBytesPerChannel == sizeof(record_play_buffer[0][0]));
+static_assert(kNumBytesPerChannel == sizeof(record_play_buffer[0][0]), "");
 
 size_t play_sample_index;
 size_t record_sample_index;
+float play_write_us;
+float record_read_us;
 
 enum ProgramState { kPlaying, kRecording, kIdle } current_state;
 
@@ -51,6 +54,13 @@ void setup() {
   tflite::InitializeTarget();
 
   audio = AUDIO_DEVICE_WS_WM8960_AUDIO_HAT;
+  if (!audio->Initialize()) {
+    while (true) {
+      // forever
+      DebugLog("Audio initialization failed\n");
+    }
+  }
+
   peripherals::AudioConfiguration config;
   config = audio->GetCurrentConfiguration();
   if (kNumChannels == 2) {
@@ -64,7 +74,6 @@ void setup() {
     while (true) {
       // forever
       DebugLog("Audio configuration failed\n");
-      continue;
     }
   }
 
@@ -79,6 +88,8 @@ void setup() {
 }
 
 void loop() {
+  peripherals::TimestampBuffer::Instance().Show();
+
   peripherals::ButtonPressState button_state =
       peripherals::Button::Instance().GetPressState();
 
@@ -92,20 +103,29 @@ void loop() {
       current_state = kIdle;
       peripherals::LED::Instance().Show(false);
       DebugLog("Stopped recording\n");
+      MicroPrintf("Recording required %f us/sample",
+                  record_read_us / record_sample_index);
     } else {
+      uint32_t start_us = peripherals::MicrosecondsCounter();
       auto num_read =
           audio->ReadRecordBuffer(&record_play_buffer[record_sample_index][0],
                                   kNumSamples - record_sample_index);
+      if (num_read > 0) {
+        record_read_us += peripherals::MicrosecondsCounter() - start_us;
+      }
       record_sample_index += num_read;
     }
   } else if (current_state == kPlaying) {
     // if playing, check if end of playback to stop playback
     // otherwise feed playback buffer
-    if (audio->SampleCount(peripherals::kPlay) >= record_sample_index) {
+    if (audio->SampleCount(peripherals::kPlay) >= record_sample_index ||
+        button_state == peripherals::kPressed) {
       audio->Stop(peripherals::kPlay);
       current_state = kIdle;
       peripherals::LED::Instance().Show(false);
       DebugLog("Stopped playing\n");
+      MicroPrintf("Playback required %f us/sample",
+                  play_write_us / play_sample_index);
     } else if (play_sample_index == record_sample_index) {
       // zero fill after end of recorded samples
       size_t num_fill = kNumZeroSamples;
@@ -117,9 +137,13 @@ void loop() {
       }
     } else {
       // feed playback buffer
+      uint32_t start_us = peripherals::MicrosecondsCounter();
       auto num_written =
           audio->WritePlayBuffer(&record_play_buffer[play_sample_index][0],
                                  record_sample_index - play_sample_index);
+      if (num_written > 0) {
+        play_write_us += peripherals::MicrosecondsCounter() - start_us;
+      }
       play_sample_index += num_written;
     }
   } else {
@@ -127,6 +151,7 @@ void loop() {
       // if not recording and not playing, check for button short press to
       // start playback
       play_sample_index = 0;
+      play_write_us = 0;
       audio->Start(peripherals::kPlay);
       current_state = kPlaying;
       peripherals::LED::Instance().Show(true);
@@ -135,6 +160,7 @@ void loop() {
       // if not recording and not playing, check for button long press to
       // start recording
       record_sample_index = 0;
+      record_read_us = 0;
       audio->Start(peripherals::kRecord);
       current_state = kRecording;
       peripherals::LED::Instance().Show(true);

@@ -25,6 +25,8 @@ namespace peripherals {
 
 class IAudioI2S {
  public:
+  virtual bool Initialize() = 0;
+
   virtual AudioConfiguration GetCurrentConfiguration() const = 0;
   virtual bool SetCurrentConfiguration(const AudioConfiguration& config) = 0;
 
