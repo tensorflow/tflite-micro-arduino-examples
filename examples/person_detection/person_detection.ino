@@ -41,7 +41,8 @@ TfLiteTensor* input = nullptr;
 
 // An area of memory to use for input, output, and intermediate arrays.
 constexpr int kTensorArenaSize = 136 * 1024;
-static uint8_t tensor_arena[kTensorArenaSize];
+// Keep aligned to 16 bytes for CMSIS
+alignas(16) uint8_t tensor_arena[kTensorArenaSize];
 }  // namespace
 
 // The name of this function is important for Arduino compatibility.

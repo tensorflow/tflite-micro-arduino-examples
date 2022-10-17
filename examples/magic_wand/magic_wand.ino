@@ -95,7 +95,8 @@ enum {
 // The size of this will depend on the model you're using, and may need to be
 // determined by experimentation.
 constexpr int kTensorArenaSize = 30 * 1024;
-uint8_t tensor_arena[kTensorArenaSize];
+// Keep aligned to 16 bytes for CMSIS
+alignas(16) uint8_t tensor_arena[kTensorArenaSize];
 
 const tflite::Model* model = nullptr;
 tflite::MicroInterpreter* interpreter = nullptr;
