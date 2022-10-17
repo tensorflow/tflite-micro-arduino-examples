@@ -61,8 +61,12 @@ InstallLibraryDependencies () {
 InstallLibraryDependencies
 
 for f in ${ARDUINO_LIBRARIES_DIR}/${LIBRARY_NAME}/examples/*/*.ino; do
-  echo "compiling $(basename ${f} .ino)"
+  EXAMPLE_NAME=$(basename ${f} .ino)
+  EXAMPLE_BINARIES=examples/${EXAMPLE_NAME}/output
+  mkdir -p ${EXAMPLE_BINARIES}
+  echo "compiling ${EXAMPLE_NAME}"
   ${ARDUINO_CLI_TOOL} compile --build-cache-path ${TEMP_BUILD_DIR} --build-path ${TEMP_BUILD_DIR} --fqbn arduino:mbed:nano33ble $f
+  cp ${TEMP_BUILD_DIR}/${EXAMPLE_NAME}.ino.* ${EXAMPLE_BINARIES}
 done
 
 rm -rf ${ARDUINO_LIBRARIES_DIR}

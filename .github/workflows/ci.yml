@@ -34,7 +34,22 @@ jobs:
     name: Arduino CLI Build
     steps:
       - uses: actions/checkout@v2
+
       - name: Test
         run: |
           ./scripts/install_arduino_cli.sh
           ./scripts/test_arduino_library.sh "${PWD}"
+
+      - name: Apply serial patch on tflite-micro
+        run: |
+          sed --in-place '/#define DEBUG_SERIAL_OBJECT/s/(Serial)/(Serial1)/' src/tensorflow/lite/micro/system_setup.cpp
+
+      - name: Build patched binaries
+        run: |
+          ./scripts/test_arduino_library.sh "${PWD}"
+
+      - name: Test patched builds in Renode
+        uses: antmicro/renode-test-action@v1.0.0
+        with:
+          renode-version: '1.12.0+20210914gitc77eea21'
+          tests-to-run: 'examples/**/*.robot'
