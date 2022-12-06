@@ -1,4 +1,4 @@
-/* Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2022 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ limitations under the License.
 #include "Arduino.h"
 #include "constants.h"
 #include "output_handler.h"
+#include "tensorflow/lite/micro/micro_log.h"
 
 // The pin of the Arduino's built-in LED
 int led = LED_BUILTIN;
@@ -26,8 +27,7 @@ int led = LED_BUILTIN;
 bool initialized = false;
 
 // Animates a dot across the screen to represent the current x and y values
-void HandleOutput(tflite::ErrorReporter* error_reporter, float x_value,
-                  float y_value) {
+void HandleOutput(float x_value, float y_value) {
   // Do this only once
   if (!initialized) {
     // Set the LED pin to output
@@ -49,6 +49,6 @@ void HandleOutput(tflite::ErrorReporter* error_reporter, float x_value,
   analogWrite(led, brightness_clamped);
 
   // Log the current brightness value for display in the Arduino plotter
-  TF_LITE_REPORT_ERROR(error_reporter, "%d\n", brightness);
+  MicroPrintf("%d\n", brightness);
   delay(33);
 }

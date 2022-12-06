@@ -1,4 +1,4 @@
-/* Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2022 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,15 +20,14 @@ limitations under the License.
 #include "main_functions.h"
 #include "model_settings.h"
 #include "person_detect_model_data.h"
-#include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
+#include "tensorflow/lite/micro/micro_log.h"
 #include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
 #include "tensorflow/lite/micro/system_setup.h"
 #include "tensorflow/lite/schema/schema_generated.h"
 
 // Globals, used for compatibility with Arduino-style sketches.
 namespace {
-tflite::ErrorReporter* error_reporter = nullptr;
 const tflite::Model* model = nullptr;
 tflite::MicroInterpreter* interpreter = nullptr;
 TfLiteTensor* input = nullptr;
@@ -49,20 +48,14 @@ static uint8_t tensor_arena[kTensorArenaSize];
 void setup() {
   tflite::InitializeTarget();
 
-  // Set up logging. Google style is to avoid globals or statics because of
-  // lifetime uncertainty, but since this has a trivial destructor it's okay.
-  // NOLINTNEXTLINE(runtime-global-variables)
-  static tflite::MicroErrorReporter micro_error_reporter;
-  error_reporter = &micro_error_reporter;
-
   // Map the model into a usable data structure. This doesn't involve any
   // copying or parsing, it's a very lightweight operation.
   model = tflite::GetModel(g_person_detect_model_data);
   if (model->version() != TFLITE_SCHEMA_VERSION) {
-    TF_LITE_REPORT_ERROR(error_reporter,
-                         "Model provided is schema version %d not equal "
-                         "to supported version %d.",
-                         model->version(), TFLITE_SCHEMA_VERSION);
+    MicroPrintf(
+        "Model provided is schema version %d not equal "
+        "to supported version %d.",
+        model->version(), TFLITE_SCHEMA_VERSION);
     return;
   }
 
@@ -84,13 +77,13 @@ void setup() {
   // Build an interpreter to run the model with.
   // NOLINTNEXTLINE(runtime-global-variables)
   static tflite::MicroInterpreter static_interpreter(
-      model, micro_op_resolver, tensor_arena, kTensorArenaSize, error_reporter);
+      model, micro_op_resolver, tensor_arena, kTensorArenaSize);
   interpreter = &static_interpreter;
 
   // Allocate memory from the tensor_arena for the model's tensors.
   TfLiteStatus allocate_status = interpreter->AllocateTensors();
   if (allocate_status != kTfLiteOk) {
-    TF_LITE_REPORT_ERROR(error_reporter, "AllocateTensors() failed");
+    MicroPrintf("AllocateTensors() failed");
     return;
   }
 
@@ -101,8 +94,7 @@ void setup() {
       (input->dims->data[1] != kNumRows) ||
       (input->dims->data[2] != kNumCols) ||
       (input->dims->data[3] != kNumChannels) || (input->type != kTfLiteInt8)) {
-    TF_LITE_REPORT_ERROR(error_reporter,
-                         "Bad input tensor parameters in model");
+    MicroPrintf("Bad input tensor parameters in model");
     return;
   }
 }
@@ -110,13 +102,13 @@ void setup() {
 // The name of this function is important for Arduino compatibility.
 void loop() {
   // Get image from provider.
-  if (kTfLiteOk != GetImage(error_reporter, input)) {
-    TF_LITE_REPORT_ERROR(error_reporter, "Image capture failed.");
+  if (kTfLiteOk != GetImage(input)) {
+    MicroPrintf("Image capture failed.");
   }
 
   // Run the model on this input and make sure it succeeds.
   if (kTfLiteOk != interpreter->Invoke()) {
-    TF_LITE_REPORT_ERROR(error_reporter, "Invoke failed.");
+    MicroPrintf("Invoke failed.");
   }
 
   TfLiteTensor* output = interpreter->output(0);
@@ -128,5 +120,5 @@ void loop() {
       (person_score - output->params.zero_point) * output->params.scale;
   float no_person_score_f =
       (no_person_score - output->params.zero_point) * output->params.scale;
-  RespondToDetection(error_reporter, person_score_f, no_person_score_f);
+  RespondToDetection(person_score_f, no_person_score_f);
 }

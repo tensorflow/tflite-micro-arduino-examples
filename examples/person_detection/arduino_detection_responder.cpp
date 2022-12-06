@@ -1,4 +1,4 @@
-/* Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2022 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,10 +23,10 @@ limitations under the License.
 
 #include "Arduino.h"
 #include "detection_responder.h"
+#include "tensorflow/lite/micro/micro_log.h"
 
 // Flash the yellow (builtin) LED after each inference
-void RespondToDetection(tflite::ErrorReporter* error_reporter,
-                        float person_score, float no_person_score) {
+void RespondToDetection(float person_score, float no_person_score) {
   static bool is_initialized = false;
   if (!is_initialized) {
     pinMode(LED_BUILTIN, OUTPUT);
@@ -65,12 +65,11 @@ void RespondToDetection(tflite::ErrorReporter* error_reporter,
   float no_person_score_frac, no_person_score_int;
   person_score_frac = std::modf(person_score * 100, &person_score_int);
   no_person_score_frac = std::modf(no_person_score * 100, &no_person_score_int);
-  TF_LITE_REPORT_ERROR(error_reporter,
-                       "Person score: %d.%d%% No person score: %d.%d%%",
-                       static_cast<int>(person_score_int),
-                       static_cast<int>(person_score_frac * 100),
-                       static_cast<int>(no_person_score_int),
-                       static_cast<int>(no_person_score_frac * 100));
+  MicroPrintf("Person score: %d.%d%% No person score: %d.%d%%",
+              static_cast<int>(person_score_int),
+              static_cast<int>(person_score_frac * 100),
+              static_cast<int>(no_person_score_int),
+              static_cast<int>(no_person_score_frac * 100));
 }
 
 #endif  // ARDUINO_EXCLUDE_CODE

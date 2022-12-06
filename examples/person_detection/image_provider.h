@@ -1,4 +1,4 @@
-/* Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2022 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@ limitations under the License.
 #define TENSORFLOW_LITE_MICRO_EXAMPLES_PERSON_DETECTION_IMAGE_PROVIDER_H_
 
 #include "tensorflow/lite/c/common.h"
-#include "tensorflow/lite/micro/micro_error_reporter.h"
 
 // This is an abstraction around an image source like a camera, and is
 // expected to place 8-bit quantized sample data into the tensor.
@@ -34,7 +33,6 @@ limitations under the License.
 //
 // For real applications, you should
 // ensure there's a specialized implementation that accesses hardware APIs.
-TfLiteStatus GetImage(tflite::ErrorReporter* error_reporter,
-                      const TfLiteTensor* tensor);
+TfLiteStatus GetImage(const TfLiteTensor* tensor);
 
 #endif  // TENSORFLOW_LITE_MICRO_EXAMPLES_PERSON_DETECTION_IMAGE_PROVIDER_H_

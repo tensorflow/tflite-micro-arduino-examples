@@ -1,4 +1,4 @@
-/* Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2022 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ limitations under the License.
 #define TENSORFLOW_LITE_MICRO_EXAMPLES_PERSON_DETECTION_DETECTION_RESPONDER_H_
 
 #include "tensorflow/lite/c/common.h"
-#include "tensorflow/lite/micro/micro_error_reporter.h"
 
 // Called every time the results of a person detection run are available. The
 // `person_score` has the numerical confidence that the captured image contains
@@ -28,7 +27,6 @@ limitations under the License.
 // does not contain a person. Typically if person_score > no person score, the
 // image is considered to contain a person.  This threshold may be adjusted for
 // particular applications.
-void RespondToDetection(tflite::ErrorReporter* error_reporter,
-                        float person_score, float no_person_score);
+void RespondToDetection(float person_score, float no_person_score);
 
 #endif  // TENSORFLOW_LITE_MICRO_EXAMPLES_PERSON_DETECTION_DETECTION_RESPONDER_H_
