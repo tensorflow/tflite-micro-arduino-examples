@@ -19,6 +19,7 @@ limitations under the License.
 #ifdef ARDUINO
 #include <Arduino.h>
 #include <Wire.h>
+#undef abs
 #else  // ARDUINO
 #error "unsupported framework"
 #endif  // ARDUINO

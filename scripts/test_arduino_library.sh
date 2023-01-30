@@ -56,7 +56,7 @@ ino_files+=(${ARDUINO_LIBRARIES_DIR}/${LIBRARY_NAME}/src/peripherals/tests/*/*.i
 
 for f in "${ino_files[@]}"; do
   echo "compiling $(basename ${f} .ino)"
-  ${ARDUINO_CLI_TOOL} compile --build-cache-path ${TEMP_BUILD_DIR} --build-path ${TEMP_BUILD_DIR} --fqbn arduino:mbed:nano33ble "$f"
+  ${ARDUINO_CLI_TOOL} compile --build-cache-path ${TEMP_BUILD_DIR} --build-path ${TEMP_BUILD_DIR} --fqbn arduino:mbed_nano:nano33ble "$f"
 done
 
 rm -rf ${ARDUINO_LIBRARIES_DIR}
