@@ -30,4 +30,4 @@ tar xzf arduino-cli_0.29.0_Linux_64bit.tar.gz
 # tar xzf arduino-cli_0.19.3_MacOS_64bit.tar.gz
 
 /tmp/arduino-cli core update-index
-/tmp/arduino-cli core install arduino:mbed
+/tmp/arduino-cli core install arduino:mbed_nano
