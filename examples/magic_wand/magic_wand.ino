@@ -1,4 +1,4 @@
-/* Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2022 The TensorFlow Authors. All Rights Reserved.
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
@@ -18,8 +18,8 @@ limitations under the License.
 
 #include "magic_wand_model_data.h"
 #include "rasterize_stroke.h"
-#include "tensorflow/lite/micro/micro_error_reporter.h"
 #include "tensorflow/lite/micro/micro_interpreter.h"
+#include "tensorflow/lite/micro/micro_log.h"
 #include "tensorflow/lite/micro/micro_mutable_op_resolver.h"
 #include "tensorflow/lite/micro/system_setup.h"
 #include "tensorflow/lite/schema/schema_generated.h"
@@ -97,7 +97,6 @@ enum {
 constexpr int kTensorArenaSize = 30 * 1024;
 uint8_t tensor_arena[kTensorArenaSize];
 
-tflite::ErrorReporter* error_reporter = nullptr;
 const tflite::Model* model = nullptr;
 tflite::MicroInterpreter* interpreter = nullptr;
 
@@ -117,13 +116,12 @@ void SetupIMU() {
   float rate_frac;
   float rate_int;
   rate_frac = modf(acceleration_sample_rate, &rate_int);
-  TF_LITE_REPORT_ERROR(error_reporter, "Acceleration sample rate %d.%d Hz",
-                       static_cast<int32_t>(rate_int),
-                       static_cast<int32_t>(rate_frac * 100));
+  MicroPrintf("Acceleration sample rate %d.%d Hz",
+              static_cast<int32_t>(rate_int),
+              static_cast<int32_t>(rate_frac * 100));
   rate_frac = modf(gyroscope_sample_rate, &rate_int);
-  TF_LITE_REPORT_ERROR(error_reporter, "Gyroscope sample rate %d.%d Hz",
-                       static_cast<int32_t>(rate_int),
-                       static_cast<int32_t>(rate_frac * 100));
+  MicroPrintf("Gyroscope sample rate %d.%d Hz", static_cast<int32_t>(rate_int),
+              static_cast<int32_t>(rate_frac * 100));
 #endif  // MAGIC_WAND_DEBUG
 }
 
@@ -140,7 +138,7 @@ void ReadAccelerometerAndGyroscope(int* new_accelerometer_samples,
     // Read each sample, removing it from the device's FIFO buffer
     if (!IMU.readGyroscope(current_gyroscope_data[0], current_gyroscope_data[1],
                            current_gyroscope_data[2])) {
-      TF_LITE_REPORT_ERROR(error_reporter, "Failed to read gyroscope data");
+      MicroPrintf("Failed to read gyroscope data");
       break;
     }
     *new_gyroscope_samples += 1;
@@ -153,7 +151,7 @@ void ReadAccelerometerAndGyroscope(int* new_accelerometer_samples,
     if (!IMU.readAcceleration(current_acceleration_data[0],
                               current_acceleration_data[1],
                               current_acceleration_data[2])) {
-      TF_LITE_REPORT_ERROR(error_reporter, "Failed to read acceleration data");
+      MicroPrintf("Failed to read acceleration data");
       break;
     }
     *new_accelerometer_samples += 1;
@@ -366,7 +364,7 @@ void UpdateStroke(int new_samples, bool* done_just_triggered) {
           stroke_length = 0;
           *stroke_state = eWaiting;
 #ifdef MAGIC_WAND_DEBUG
-          TF_LITE_REPORT_ERROR(error_reporter, "stroke length too small");
+          MicroPrintf("stroke length too small");
 #endif  // MAGIC_WAND_DEBUG
         }
       }
@@ -496,7 +494,7 @@ void UpdateStroke(int new_samples, bool* done_just_triggered) {
         *stroke_transmit_length = 0;
         stroke_length = 0;
 #ifdef MAGIC_WAND_DEBUG
-        TF_LITE_REPORT_ERROR(error_reporter, "stroke too small");
+        MicroPrintf("stroke too small");
 #endif  // MAGIC_WAND_DEBUG
       }
     }
@@ -508,15 +506,10 @@ void UpdateStroke(int new_samples, bool* done_just_triggered) {
 void setup() {
   tflite::InitializeTarget();  // setup serial port
 
-  // Set up logging. Google style is to avoid globals or statics because of
-  // lifetime uncertainty, but since this has a trivial destructor it's okay.
-  static tflite::MicroErrorReporter micro_error_reporter;  // NOLINT
-  error_reporter = &micro_error_reporter;
-
-  TF_LITE_REPORT_ERROR(error_reporter, "Started");
+  MicroPrintf("Started");
 
   if (!IMU.begin()) {
-    TF_LITE_REPORT_ERROR(error_reporter, "Failed to initialized IMU!");
+    MicroPrintf("Failed to initialized IMU!");
     while (true) {
       // NORETURN
     }
@@ -525,7 +518,7 @@ void setup() {
   SetupIMU();
 
   if (!BLE.begin()) {
-    TF_LITE_REPORT_ERROR(error_reporter, "Failed to initialized BLE!");
+    MicroPrintf("Failed to initialized BLE!");
     while (true) {
       // NORETURN
     }
@@ -533,7 +526,7 @@ void setup() {
 
   String address = BLE.address();
 
-  TF_LITE_REPORT_ERROR(error_reporter, "address = %s", address.c_str());
+  MicroPrintf("address = %s", address.c_str());
 
   address.toUpperCase();
 
@@ -543,7 +536,7 @@ void setup() {
   name += address[address.length() - 2];
   name += address[address.length() - 1];
 
-  TF_LITE_REPORT_ERROR(error_reporter, "name = %s", name.c_str());
+  MicroPrintf("name = %s", name.c_str());
 
   BLE.setLocalName(name.c_str());
   BLE.setDeviceName(name.c_str());
@@ -559,10 +552,10 @@ void setup() {
   // copying or parsing, it's a very lightweight operation.
   model = tflite::GetModel(g_magic_wand_model_data);
   if (model->version() != TFLITE_SCHEMA_VERSION) {
-    TF_LITE_REPORT_ERROR(error_reporter,
-                         "Model provided is schema version %d not equal "
-                         "to supported version %d.",
-                         model->version(), TFLITE_SCHEMA_VERSION);
+    MicroPrintf(
+        "Model provided is schema version %d not equal "
+        "to supported version %d.",
+        model->version(), TFLITE_SCHEMA_VERSION);
     return;
   }
 
@@ -579,7 +572,7 @@ void setup() {
 
   // Build an interpreter to run the model with.
   static tflite::MicroInterpreter static_interpreter(
-      model, micro_op_resolver, tensor_arena, kTensorArenaSize, error_reporter);
+      model, micro_op_resolver, tensor_arena, kTensorArenaSize);
   interpreter = &static_interpreter;
 
   // Allocate memory from the tensor_arena for the model's tensors.
@@ -593,8 +586,7 @@ void setup() {
       (model_input->type != kTfLiteInt8) ||
       (model_input->params.zero_point != -128) ||
       (model_input->params.scale != 1.0)) {
-    TF_LITE_REPORT_ERROR(error_reporter,
-                         "Bad input tensor parameters in model");
+    MicroPrintf("Bad input tensor parameters in model");
     return;
   }
 
@@ -602,8 +594,7 @@ void setup() {
   if ((model_output->dims->size != 2) || (model_output->dims->data[0] != 1) ||
       (model_output->dims->data[1] != label_count) ||
       (model_output->type != kTfLiteInt8)) {
-    TF_LITE_REPORT_ERROR(error_reporter,
-                         "Bad output tensor parameters in model");
+    MicroPrintf("Bad output tensor parameters in model");
     return;
   }
 }
@@ -615,8 +606,7 @@ void loop() {
   static bool was_connected_last = false;
   if (central && !was_connected_last) {
     // print the central's BT address:
-    TF_LITE_REPORT_ERROR(error_reporter, "Connected to central: %s",
-                         central.address().c_str());
+    MicroPrintf("Connected to central: %s", central.address().c_str());
   }
   was_connected_last = central;
 
@@ -669,10 +659,10 @@ void loop() {
         line[x] = output;
       }
       line[raster_width] = 0;
-      TF_LITE_REPORT_ERROR(error_reporter, line);
+      MicroPrintf(line);
     }
 #ifdef MAGIC_WAND_DEBUG
-    TF_LITE_REPORT_ERROR(error_reporter, "tx len: %d", *stroke_transmit_length);
+    MicroPrintf("tx len: %d", *stroke_transmit_length);
 #endif  // MAGIC_WAND_DEBUG
 
     TfLiteTensor* model_input = interpreter->input(0);
@@ -682,7 +672,7 @@ void loop() {
 
     TfLiteStatus invoke_status = interpreter->Invoke();
     if (invoke_status != kTfLiteOk) {
-      TF_LITE_REPORT_ERROR(error_reporter, "Invoke failed");
+      MicroPrintf("Invoke failed");
       return;
     }
 
@@ -701,8 +691,8 @@ void loop() {
         (max_score - output->params.zero_point) * output->params.scale;
     float max_score_int;
     float max_score_frac = modf(max_score_f * 100, &max_score_int);
-    TF_LITE_REPORT_ERROR(error_reporter, "Found %s (%d.%d%%)",
-                         labels[max_index], static_cast<int>(max_score_int),
-                         static_cast<int>(max_score_frac * 100));
+    MicroPrintf("Found %s (%d.%d%%)", labels[max_index],
+                static_cast<int>(max_score_int),
+                static_cast<int>(max_score_frac * 100));
   }
 }

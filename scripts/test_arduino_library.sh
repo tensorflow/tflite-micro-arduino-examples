@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2022 The TensorFlow Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -41,28 +41,22 @@ cp -a ${LIBRARY_DIR} "${ARDUINO_LIBRARIES_DIR}"
 InstallLibraryDependencies () {
   # Required by magic_wand
   ${ARDUINO_CLI_TOOL} lib install Arduino_LSM9DS1@1.1.0
-  ${ARDUINO_CLI_TOOL} lib install ArduinoBLE@1.2.1
-
-  # Required by person_detection
-  ${ARDUINO_CLI_TOOL} lib install JPEGDecoder@1.8.0
-  # Patch to ensure works with nano33ble. This hack (deleting the entire
-  # contents of the file) works with 1.8.0. If we bump the version, may need a
-  # different patch.
-  > ${ARDUINO_LIBRARIES_DIR}/JPEGDecoder/src/User_Config.h
-
-  # Arducam, not available through Arduino library manager. This specific
-  # commit is tested to work; if we bump the commit, we need to ensure that
-  # the defines in ArduCAM/memorysaver.h are correct.
-  wget -O /tmp/arducam-master.zip https://github.com/ArduCAM/Arduino/archive/e216049ba304048ec9bb29adfc2cc24c16f589b1/master.zip
-  unzip -o /tmp/arducam-master.zip -d /tmp
-  cp -a /tmp/Arduino-e216049ba304048ec9bb29adfc2cc24c16f589b1/ArduCAM "${ARDUINO_LIBRARIES_DIR}"
+  ${ARDUINO_CLI_TOOL} lib install ArduinoBLE@1.3.2
 }
 
 InstallLibraryDependencies
 
-for f in ${ARDUINO_LIBRARIES_DIR}/${LIBRARY_NAME}/examples/*/*.ino; do
+# in case file glob expansion is empty
+shopt -s nullglob
+
+ino_files=()
+ino_files+=(${ARDUINO_LIBRARIES_DIR}/${LIBRARY_NAME}/examples/*/*.ino)
+ino_files+=(${ARDUINO_LIBRARIES_DIR}/${LIBRARY_NAME}/src/peripherals/examples/*/*.ino)
+ino_files+=(${ARDUINO_LIBRARIES_DIR}/${LIBRARY_NAME}/src/peripherals/tests/*/*.ino)
+
+for f in "${ino_files[@]}"; do
   echo "compiling $(basename ${f} .ino)"
-  ${ARDUINO_CLI_TOOL} compile --build-cache-path ${TEMP_BUILD_DIR} --build-path ${TEMP_BUILD_DIR} --fqbn arduino:mbed:nano33ble $f
+  ${ARDUINO_CLI_TOOL} compile --build-cache-path ${TEMP_BUILD_DIR} --build-path ${TEMP_BUILD_DIR} --fqbn arduino:mbed:nano33ble "$f"
 done
 
 rm -rf ${ARDUINO_LIBRARIES_DIR}

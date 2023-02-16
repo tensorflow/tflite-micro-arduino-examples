@@ -1,4 +1,4 @@
-/* Copyright 2019 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2022 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ limitations under the License.
 
 #include "image_provider.h"
 #include "model_settings.h"
+#include "tensorflow/lite/micro/micro_log.h"
 #include "tensorflow/lite/micro/micro_utils.h"
 #include "test_over_serial/test_over_serial.h"
 
@@ -41,25 +42,23 @@ constexpr size_t kImageBufferLength =
     std::extent<decltype(image_buffer)>::value;
 
 // Get the camera module ready
-TfLiteStatus InitCamera(tflite::ErrorReporter* error_reporter) {
+TfLiteStatus InitCamera() {
   // This function kept for future implementation
-  TF_LITE_REPORT_ERROR(
-      error_reporter,
-      "OV7675 not yet supported.  Blank image will be substituted.");
+  MicroPrintf("OV7675 not yet supported.  Blank image will be substituted.");
   return kTfLiteOk;
 }
 
 // Begin the capture and wait for it to finish
-TfLiteStatus PerformCapture(tflite::ErrorReporter* error_reporter) {
+TfLiteStatus PerformCapture() {
   // This function kept for future implementation
-  TF_LITE_REPORT_ERROR(error_reporter, "Starting capture");
+  MicroPrintf("Starting capture");
   delay(50);
-  TF_LITE_REPORT_ERROR(error_reporter, "Image captured");
+  MicroPrintf("Image captured");
   return kTfLiteOk;
 }
 
 // Read data from the camera module into a local buffer
-TfLiteStatus ReadData(tflite::ErrorReporter* error_reporter) {
+TfLiteStatus ReadData() {
   // This function kept for future implementation
   // until OV7675 supported, just fill with zeros (black image)
   std::fill_n(image_buffer, kImageBufferLength, 0);
@@ -67,10 +66,9 @@ TfLiteStatus ReadData(tflite::ErrorReporter* error_reporter) {
 }
 
 // Decode the image, crop it, and convert it to grayscale
-TfLiteStatus CropAndQuantizeImage(tflite::ErrorReporter* error_reporter,
-                                  size_t image_width, size_t image_height,
+TfLiteStatus CropAndQuantizeImage(size_t image_width, size_t image_height,
                                   const TfLiteTensor* tensor) {
-  TF_LITE_REPORT_ERROR(error_reporter, "Cropping image and quantizing");
+  MicroPrintf("Cropping image and quantizing");
 
   // cropping parameters
   const size_t vert_top = (image_height - kNumRows) / 2;
@@ -90,47 +88,45 @@ TfLiteStatus CropAndQuantizeImage(tflite::ErrorReporter* error_reporter,
     p += ((image_width - 1) - horz_right) + horz_left;
   }
 
-  TF_LITE_REPORT_ERROR(error_reporter, "Image cropped and quantized");
+  MicroPrintf("Image cropped and quantized");
   return kTfLiteOk;
 }
 
 // Get an image from the camera module
-TfLiteStatus GetCameraImage(tflite::ErrorReporter* error_reporter,
-                            const TfLiteTensor* tensor) {
+TfLiteStatus GetCameraImage(const TfLiteTensor* tensor) {
   static bool g_is_camera_initialized = false;
   if (!g_is_camera_initialized) {
-    TfLiteStatus init_status = InitCamera(error_reporter);
+    TfLiteStatus init_status = InitCamera();
     if (init_status != kTfLiteOk) {
-      TF_LITE_REPORT_ERROR(error_reporter, "InitCamera failed");
+      MicroPrintf("InitCamera failed");
       return init_status;
     }
     g_is_camera_initialized = true;
   }
 
-  TfLiteStatus capture_status = PerformCapture(error_reporter);
+  TfLiteStatus capture_status = PerformCapture();
   if (capture_status != kTfLiteOk) {
-    TF_LITE_REPORT_ERROR(error_reporter, "PerformCapture failed");
+    MicroPrintf("PerformCapture failed");
     return capture_status;
   }
 
-  TfLiteStatus read_data_status = ReadData(error_reporter);
+  TfLiteStatus read_data_status = ReadData();
   if (read_data_status != kTfLiteOk) {
-    TF_LITE_REPORT_ERROR(error_reporter, "ReadData failed");
+    MicroPrintf("ReadData failed");
     return read_data_status;
   }
 
   TfLiteStatus decode_status =
-      CropAndQuantizeImage(error_reporter, kQQVGA_width, kQQVGA_height, tensor);
+      CropAndQuantizeImage(kQQVGA_width, kQQVGA_height, tensor);
   if (decode_status != kTfLiteOk) {
-    TF_LITE_REPORT_ERROR(error_reporter, "CropAndQuantizeImage failed");
+    MicroPrintf("CropAndQuantizeImage failed");
     return decode_status;
   }
 
   return kTfLiteOk;
 }
 
-TfLiteStatus GetTestImage(tflite::ErrorReporter* error_reporter,
-                          TestOverSerial& test, const TfLiteTensor* tensor) {
+TfLiteStatus GetTestImage(TestOverSerial& test, const TfLiteTensor* tensor) {
   volatile bool done = false;
   volatile bool aborted = false;
   volatile size_t image_width = 0, image_height = 0;
@@ -161,15 +157,15 @@ TfLiteStatus GetTestImage(tflite::ErrorReporter* error_reporter,
   while (!done) {
     test.ProcessInput(&handler);
     if (aborted) {
-      TF_LITE_REPORT_ERROR(error_reporter, "Input processing aborted");
+      MicroPrintf("Input processing aborted");
       return kTfLiteError;
     }
     // wait for a full image from serial port before processing
     if (done) {
-      TfLiteStatus decode_status = CropAndQuantizeImage(
-          error_reporter, image_width, image_height, tensor);
+      TfLiteStatus decode_status =
+          CropAndQuantizeImage(image_width, image_height, tensor);
       if (decode_status != kTfLiteOk) {
-        TF_LITE_REPORT_ERROR(error_reporter, "CropAndQuantizeImage failed");
+        MicroPrintf("CropAndQuantizeImage failed");
         return decode_status;
       }
     }
@@ -180,18 +176,17 @@ TfLiteStatus GetTestImage(tflite::ErrorReporter* error_reporter,
 
 }  // namespace
 
-TfLiteStatus GetImage(tflite::ErrorReporter* error_reporter,
-                      const TfLiteTensor* tensor) {
+TfLiteStatus GetImage(const TfLiteTensor* tensor) {
   TestOverSerial& test = TestOverSerial::Instance(kIMAGE_GRAYSCALE);
   if (!test.IsTestMode()) {
     // check serial port for test mode command
     test.ProcessInput(nullptr);
   }
   if (test.IsTestMode()) {
-    return GetTestImage(error_reporter, test, tensor);
+    return GetTestImage(test, tensor);
   } else {
     // get an image from the camera
-    return GetCameraImage(error_reporter, tensor);
+    return GetCameraImage(tensor);
   }
   // NOTREACHED
 }

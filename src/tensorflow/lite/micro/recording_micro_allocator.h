@@ -1,4 +1,4 @@
-/* Copyright 2020 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2023 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -54,14 +54,6 @@ struct RecordedAllocation {
 // for auditing memory usage or integration testing.
 class RecordingMicroAllocator : public MicroAllocator {
  public:
-  // TODO(b/246776144): Will be removed with http://b/246776144
-  static RecordingMicroAllocator* Create(uint8_t* tensor_arena,
-                                         size_t arena_size,
-                                         ErrorReporter* error_reporter) {
-    (void)error_reporter;
-    return RecordingMicroAllocator::Create(tensor_arena, arena_size);
-  }
-
   static RecordingMicroAllocator* Create(uint8_t* tensor_arena,
                                          size_t arena_size);
 
@@ -85,8 +77,9 @@ class RecordingMicroAllocator : public MicroAllocator {
       const Model* model, SubgraphAllocations* subgraph_allocations) override;
   TfLiteStatus AllocateTfLiteEvalTensors(
       const Model* model, SubgraphAllocations* subgraph_allocations) override;
-  TfLiteStatus AllocateVariables(const SubGraph* subgraph,
-                                 TfLiteEvalTensor* eval_tensors) override;
+  TfLiteStatus AllocateVariables(
+      const SubGraph* subgraph, TfLiteEvalTensor* eval_tensors,
+      const int32_t* offline_planner_offsets) override;
   // TODO(b/162311891): Once all kernels have been updated to the new API drop
   // this method. It is only used to record TfLiteTensor persistent allocations.
   TfLiteTensor* AllocatePersistentTfLiteTensorInternal() override;

@@ -1,4 +1,4 @@
-/* Copyright 2018 The TensorFlow Authors. All Rights Reserved.
+/* Copyright 2022 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ limitations under the License.
 #include "PDM.h"
 #include "audio_provider.h"
 #include "micro_features_micro_model_settings.h"
+#include "tensorflow/lite/micro/micro_log.h"
 #include "test_over_serial/test_over_serial.h"
 
 using namespace test_over_serial;
@@ -39,8 +40,6 @@ int16_t g_audio_output_buffer[kMaxAudioSampleSize];
 // Mark as volatile so we can check in a while loop to see if
 // any samples have arrived yet.
 volatile int32_t g_latest_audio_timestamp = 0;
-// error reporter
-tflite::ErrorReporter* g_error_reporter;
 // test_over_serial sample index
 uint32_t g_test_sample_index;
 // test_over_serial silence insertion flag
@@ -63,8 +62,8 @@ void CaptureSamples() {
   int num_read =
       PDM.read(g_audio_capture_buffer + capture_index, DEFAULT_PDM_BUFFER_SIZE);
   if (num_read != DEFAULT_PDM_BUFFER_SIZE) {
-    TF_LITE_REPORT_ERROR(g_error_reporter, "### short read (%d/%d) @%dms",
-                         num_read, DEFAULT_PDM_BUFFER_SIZE, time_in_ms);
+    MicroPrintf("### short read (%d/%d) @%dms", num_read,
+                DEFAULT_PDM_BUFFER_SIZE, time_in_ms);
     while (true) {
       // NORETURN
     }
@@ -73,9 +72,8 @@ void CaptureSamples() {
   g_latest_audio_timestamp = time_in_ms;
 }
 
-TfLiteStatus InitAudioRecording(tflite::ErrorReporter* error_reporter) {
+TfLiteStatus InitAudioRecording() {
   if (!g_is_audio_initialized) {
-    g_error_reporter = error_reporter;
     // Hook up the callback that will be called with each sample
     PDM.onReceive(CaptureSamples);
     // Start listening for audio: MONO @ 16KHz
@@ -91,8 +89,7 @@ TfLiteStatus InitAudioRecording(tflite::ErrorReporter* error_reporter) {
   return kTfLiteOk;
 }
 
-TfLiteStatus GetAudioSamples(tflite::ErrorReporter* error_reporter,
-                             int start_ms, int duration_ms,
+TfLiteStatus GetAudioSamples(int start_ms, int duration_ms,
                              int* audio_samples_size, int16_t** audio_samples) {
   // This next part should only be called when the main thread notices that the
   // latest audio sample data timestamp has changed, so that there's new data
