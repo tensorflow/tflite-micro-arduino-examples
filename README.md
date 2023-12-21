@@ -71,7 +71,7 @@ This code is made available under the Apache 2 license.
 ## Contributing
 
 Forks of this library are welcome and encouraged. If you have bug reports or
-fixes to contribute, the source of this code is at [https:://github.com/tensorflow/tflite-micro](github.com/tensorflow/tflite-micro)
+fixes to contribute, the source of this code is at [https://github.com/tensorflow/tflite-micro](http://github.com/tensorflow/tflite-micro)
 and all issues and pull requests should be directed there.
 
 The code here is created through an automatic project generation process
